@@ -27,12 +27,69 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+extern DMA_HandleTypeDef hdma_spi3_rx;
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+typedef struct {
+    uint16_t frame_head;
+    uint16_t frame_len;
+    uint16_t explose_time_us;
+    uint8_t frame_mode;
+    uint8_t frame_index;
+    uint16_t frame_tail;
+    uint8_t frame_data[1000];
+}__attribute__((packed)) frame_data_t;
+frame_data_t frame_data;
+uint8_t dma_rx_buf[1024];
 
+void dr_irq(void)
+{
+    if(HAL_GPIO_ReadPin(DR_IRQ_GPIO_Port,DR_IRQ_Pin)==GPIO_PIN_SET)
+    {
+       return;
+    }  
+    else
+    {
+        HAL_GPIO_WritePin(SPI_CS_GPIO_Port,SPI_CS_Pin,GPIO_PIN_RESET);
+        HAL_SPI_Receive_DMA(&hspi3,dma_rx_buf,sizeof(dma_rx_buf));
+    }
+
+}
+
+void hal_dma_ok()
+{
+ HAL_GPIO_WritePin(SPI_CS_GPIO_Port,SPI_CS_Pin,GPIO_PIN_SET);
+ HAL_SPI_DMAStop(&hspi3);
+ for (int i = 0;i < 5;i++)// spi速率过高前面会出现部分上一次数据, 在前几个数据里面查找帧头
+    {
+        if (*(uint16_t*)(dma_rx_buf + i) == 0x2107 &&
+            *(uint16_t*)(dma_rx_buf + i + 8) == 0x0721)
+        {
+            memcpy(&frame_data, dma_rx_buf + i, 1010);
+            // ccd_one_frame_ok();
+            break;
+        }
+    }
+}
+
+void HAL_DMA_TxCpltCallback(DMA_HandleTypeDef *hdma)
+{
+if(hdma==&hdma_spi3_rx)
+{
+hal_dma_ok();
+}
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+if(GPIO_Pin==GPIO_PIN_5)
+{
+dr_irq();
+}
+
+}
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -101,6 +158,9 @@ int main(void)
   MX_TIM12_Init();
   MX_TIM13_Init();
   /* USER CODE BEGIN 2 */
+    if (!HAL_GPIO_ReadPin(DR_IRQ_GPIO_Port,DR_IRQ_Pin))
+        dr_irq();
+
   main_rtos();
 
   /* USER CODE END 2 */

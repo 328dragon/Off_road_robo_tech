@@ -19,8 +19,8 @@ void pattern_switch(void *pvparameters);
 void main_rtos(void)
 {   
 
-motorl.motor_init();
-motorr.motor_init();
+//motorl.motor_init();
+//motorr.motor_init();
 
     BaseType_t task1 = xTaskCreate(state_update,"state_update",200,NULL,4,
         &state_update_handle);
