@@ -28,6 +28,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 extern DMA_HandleTypeDef hdma_spi3_rx;
+__IO int ccd_data_ok=0;
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -62,6 +63,7 @@ void hal_dma_ok()
 {
  HAL_GPIO_WritePin(SPI_CS_GPIO_Port,SPI_CS_Pin,GPIO_PIN_SET);
  HAL_SPI_DMAStop(&hspi3);
+
  for (int i = 0;i < 5;i++)// spi速率过高前面会出现部分上一次数据, 在前几个数据里面查找帧头
     {
         if (*(uint16_t*)(dma_rx_buf + i) == 0x2107 &&
@@ -78,14 +80,17 @@ void HAL_DMA_TxCpltCallback(DMA_HandleTypeDef *hdma)
 {
 if(hdma==&hdma_spi3_rx)
 {
+ccd_data_ok=1;
 hal_dma_ok();
 }
+
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 if(GPIO_Pin==GPIO_PIN_5)
 {
+	ccd_data_ok=0;
 dr_irq();
 }
 
