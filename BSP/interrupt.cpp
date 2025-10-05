@@ -1,6 +1,8 @@
 #include "interrupt.h"
 extern Motor::dc_motor motorl;
 extern Motor::dc_motor motorr;
+extern int ccd_pos;
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if(huart == &huart3)
@@ -26,6 +28,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 if(htim==&htim13)
 {
+char tx_buff[4];
+
+
+
+
 	//10ms
 motorl.get_motor_speed();
 motorr.get_motor_speed();	

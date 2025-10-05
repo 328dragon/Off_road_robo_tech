@@ -3,13 +3,16 @@
 #include "task.h"
 #include "motor.h"
 #include "ATK_MS53L0M.h"
-//extern uint8_t dma_rx_buf[1024];
+#define abs(x) (((x)>0)?(x):(-(x)))
 extern uint8_t ccd_origin_data[1000];
-//extern frame_data_t frame_data;
 extern __IO int ccd_data_ok;
 uint16_t ccd_data[101];
 uint16_t ccd_min=0xffff;
+uint16_t ccd_max=0;
+uint16_t ccd_slop_max=0;
 int ccd_pos=-1;
+int ccd_pos_white=-1;
+int ccd_slop_max_pos=-1;
 using namespace Motor;
 extern Motor::dc_motor motorl;
 extern Motor::dc_motor motorr;
@@ -26,8 +29,8 @@ void pattern_switch(void *pvparameters);
 void main_rtos(void)
 {
 
-    // motorl.motor_init();
-    // motorr.motor_init();
+     motorl.motor_init();
+    motorr.motor_init();
 
     BaseType_t task1 = xTaskCreate(state_update, "state_update", 200, NULL, 4,
                                    &state_update_handle);
@@ -71,15 +74,46 @@ void data_processing(void *pvparameters)
         }
 				for(int i=0;i<101;i++)
 				{
-				if(ccd_data[i]<ccd_min&&ccd_data[i]!=0)
+//				if(ccd_data[i]<ccd_min&&ccd_data[i]!=0)
+//				{
+//				ccd_min=ccd_data[i];
+//					if(i>10&&i<90)
+//				ccd_pos=i;	
+//				}
+					if(i>22&&i<75)
+					{
+					int slope_temp=0;
+						if(ccd_data[i+1]>=ccd_data[i])
+						{
+												slope_temp=abs(ccd_data[i+1]-ccd_data[i]);
+						}
+						else{
+												slope_temp=abs(ccd_data[i]-ccd_data[i+1]);
+
+						}
+//						slope_temp=abs(ccd_data[i+1]-ccd_data[i]);
+						if(slope_temp>ccd_slop_max)
+						{
+						ccd_slop_max=slope_temp;
+							ccd_slop_max_pos=i;
+						}
+					}
+				
+								if(ccd_data[i]>ccd_max&&ccd_data[i]!=0)
 				{
-				ccd_min=ccd_data[i];
-				ccd_pos=i;	
+				ccd_max=ccd_data[i];
+					if(i>10&&i<90)
+				ccd_pos_white=i;	
+				}
 				}
 				
-				}
-		
 				ccd_min=0xffff;
+				ccd_max=0;
+				ccd_slop_max=0;
+				char tx_ccd[5];
+				sprintf(tx_ccd,":%d\n",ccd_slop_max_pos);
+				
+					HAL_UART_Transmit_DMA(&huart3,(uint8_t*)tx_ccd,5);
         vTaskDelay(10);
     }
 }
