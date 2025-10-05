@@ -3,9 +3,13 @@
 #include "task.h"
 #include "motor.h"
 #include "ATK_MS53L0M.h"
-extern uint8_t dma_rx_buf[1024];
+//extern uint8_t dma_rx_buf[1024];
+extern uint8_t ccd_origin_data[1000];
+//extern frame_data_t frame_data;
 extern __IO int ccd_data_ok;
-uint8_t ccd_data[101];
+uint16_t ccd_data[101];
+uint16_t ccd_min=0xffff;
+int ccd_pos=-1;
 using namespace Motor;
 extern Motor::dc_motor motorl;
 extern Motor::dc_motor motorr;
@@ -52,16 +56,30 @@ void data_processing(void *pvparameters)
 {
     while (1)
     {
+			
         if (ccd_data_ok == 1)
         {
+							memset(ccd_data,0,sizeof(ccd_data));
             for (int i = 0; i < 101; i++)
             {
                 for (int j = 0; j < 10; j++)
                 {
-                    ccd_data[i] += dma_rx_buf[i * 10 + j] / 10;
+                    ccd_data[i] += ccd_origin_data[i * 10 + j] / 10;
                 }
             }
+						ccd_data_ok=0;			
         }
+				for(int i=0;i<101;i++)
+				{
+				if(ccd_data[i]<ccd_min&&ccd_data[i]!=0)
+				{
+				ccd_min=ccd_data[i];
+				ccd_pos=i;	
+				}
+				
+				}
+		
+				ccd_min=0xffff;
         vTaskDelay(10);
     }
 }

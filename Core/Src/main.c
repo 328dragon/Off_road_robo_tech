@@ -27,6 +27,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "string.h"
 extern DMA_HandleTypeDef hdma_spi3_rx;
 __IO int ccd_data_ok=0;
 /* USER CODE END Includes */
@@ -42,9 +43,9 @@ typedef struct {
     uint16_t frame_tail;
     uint8_t frame_data[1000];
 }__attribute__((packed)) frame_data_t;
-frame_data_t frame_data;
+//frame_data_t frame_data;
+uint8_t ccd_origin_data[1000];
 uint8_t dma_rx_buf[1024];
-
 void dr_irq(void)
 {
     if(HAL_GPIO_ReadPin(DR_IRQ_GPIO_Port,DR_IRQ_Pin)==GPIO_PIN_SET)
@@ -54,6 +55,11 @@ void dr_irq(void)
     else
     {
         HAL_GPIO_WritePin(SPI_CS_GPIO_Port,SPI_CS_Pin,GPIO_PIN_RESET);
+//			for(__IO int i=0 ;i<10000;i++)
+//			{
+//				
+//			}
+//		  HAL_GPIO_WritePin(SPI_CS_GPIO_Port,SPI_CS_Pin,GPIO_PIN_SET);
         HAL_SPI_Receive_DMA(&hspi3,dma_rx_buf,sizeof(dma_rx_buf));
     }
 
@@ -69,28 +75,21 @@ void hal_dma_ok()
         if (*(uint16_t*)(dma_rx_buf + i) == 0x2107 &&
             *(uint16_t*)(dma_rx_buf + i + 8) == 0x0721)
         {
-            memcpy(&frame_data, dma_rx_buf + i, 1010);
+//            memcpy(&frame_data, dma_rx_buf + i, 1010);
+						memcpy(ccd_origin_data,dma_rx_buf+i+10,1000);
             // ccd_one_frame_ok();
             break;
         }
     }
 }
 
-void HAL_DMA_TxCpltCallback(DMA_HandleTypeDef *hdma)
-{
-if(hdma==&hdma_spi3_rx)
-{
-ccd_data_ok=1;
-hal_dma_ok();
-}
 
-}
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 if(GPIO_Pin==GPIO_PIN_5)
 {
-	ccd_data_ok=0;
+//	ccd_data_ok=0;
 dr_irq();
 }
 
