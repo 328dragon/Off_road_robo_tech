@@ -55,11 +55,6 @@ void dr_irq(void)
     else
     {
         HAL_GPIO_WritePin(SPI_CS_GPIO_Port,SPI_CS_Pin,GPIO_PIN_RESET);
-//			for(__IO int i=0 ;i<10000;i++)
-//			{
-//				
-//			}
-//		  HAL_GPIO_WritePin(SPI_CS_GPIO_Port,SPI_CS_Pin,GPIO_PIN_SET);
         HAL_SPI_Receive_DMA(&hspi3,dma_rx_buf,sizeof(dma_rx_buf));
     }
 
@@ -75,9 +70,7 @@ void hal_dma_ok()
         if (*(uint16_t*)(dma_rx_buf + i) == 0x2107 &&
             *(uint16_t*)(dma_rx_buf + i + 8) == 0x0721)
         {
-//            memcpy(&frame_data, dma_rx_buf + i, 1010);
 						memcpy(ccd_origin_data,dma_rx_buf+i+10,1000);
-            // ccd_one_frame_ok();
             break;
         }
     }
@@ -89,7 +82,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 if(GPIO_Pin==GPIO_PIN_5)
 {
-//	ccd_data_ok=0;
 dr_irq();
 }
 
