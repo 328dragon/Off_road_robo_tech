@@ -4,13 +4,14 @@
 #include "motor.h"
 #include "ATK_MS53L0M.h"
 #include "ccd.h"
+#include "control.h"
 #define abs(x) (((x) > 0) ? (x) : (-(x)))
-//ccd数据
+// ccd数据
 CCD_t front_ccd;
 using namespace Motor;
 Motor::dc_motor motorl(htim8, TIM_CHANNEL_4, PH1_GPIO_Port, PH1_Pin, htim3, 1);
 Motor::dc_motor motorr(htim8, TIM_CHANNEL_3, PH2_GPIO_Port, PH2_Pin, htim2, 0);
-
+car_state car;
 TaskHandle_t main_rtos_handle;       // 主函数
 TaskHandle_t state_update_handle;    // 状态更新
 TaskHandle_t data_processing_handle; // 数据获取及处理
@@ -25,7 +26,7 @@ void main_rtos(void)
 
     motorl.motor_init();
     motorr.motor_init();
-		CCD_Init(&front_ccd,DR_IRQ_GPIO_Port,DR_IRQ_Pin,SPI_CS_GPIO_Port,SPI_CS_Pin,&hspi3);
+    CCD_Init(&front_ccd, DR_IRQ_GPIO_Port, DR_IRQ_Pin, SPI_CS_GPIO_Port, SPI_CS_Pin, &hspi3);
     BaseType_t task1 = xTaskCreate(state_update, "state_update", 200, NULL, 4,
                                    &state_update_handle);
     BaseType_t task2 = xTaskCreate(data_processing, "data_processing", 200, NULL, 4,
@@ -46,6 +47,7 @@ void state_update(void *pvparameters)
 {
     while (1)
     {
+        car.vel_Control();
         vTaskDelay(10);
     }
 }
@@ -54,6 +56,7 @@ void data_processing(void *pvparameters)
     while (1)
     {
         ccd_data_process(&front_ccd);
+        car.pos_update(front_ccd.ccd_slope_max_pos);
         // 发送给电脑中心位置，调试用
         char tx_ccd[5];
         sprintf(tx_ccd, ":%d\n", front_ccd.ccd_slope_max_pos);
