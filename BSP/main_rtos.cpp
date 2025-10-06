@@ -74,7 +74,7 @@ void data_processing(void *pvparameters)
 				for(int i=0;i<100;i++)
 				{
 
-					if(i>22&&i<75)
+					if(i>22&&i<78)
 					{
 					int slope_temp=0;
 						if(ccd_data[i+1]>=ccd_data[i])

@@ -799,11 +799,6 @@
               <FilePath>..\Hardwares\motor.h</FilePath>
             </File>
             <File>
-              <FileName>ccd.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Hardwares\ccd.h</FilePath>
-            </File>
-            <File>
               <FileName>motor.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\Hardwares\motor.cpp</FilePath>
@@ -812,11 +807,6 @@
               <FileName>encoder.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\Hardwares\encoder.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>ccd.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\Hardwares\ccd.cpp</FilePath>
             </File>
             <File>
               <FileName>encoder.h</FileName>

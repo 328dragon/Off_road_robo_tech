@@ -43,7 +43,6 @@
 "robot\pid.o"
 "robot\motor.o"
 "robot\encoder.o"
-"robot\ccd.o"
 "robot\atk_ms53l0m.o"
 --strict --scatter "robot\robot.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols

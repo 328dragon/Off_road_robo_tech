@@ -28,11 +28,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 if(htim==&htim13)
 {
-char tx_buff[4];
-
-
-
-
 	//10ms
 motorl.get_motor_speed();
 motorr.get_motor_speed();	
@@ -40,7 +35,7 @@ motorr.get_motor_speed();
 if(htim==&htim12)
 {
 motorl.motor_output(pid_calc(&motorl.vel_pid,motorl.current_wheel_speed,motorl.target_wheel_speed));
-	motorr.motor_output(pid_calc(&motorr.vel_pid,motorr.current_wheel_speed,motorr.target_wheel_speed));
+motorr.motor_output(pid_calc(&motorr.vel_pid,motorr.current_wheel_speed,motorr.target_wheel_speed));
 }
 
 }
