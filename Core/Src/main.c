@@ -86,6 +86,16 @@ dr_irq();
 }
 
 }
+
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+	if(hspi==&hspi3)
+	{
+		ccd_data_ok=1;
+  hal_dma_ok();}
+	
+}
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
