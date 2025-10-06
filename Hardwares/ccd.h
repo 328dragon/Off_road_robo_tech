@@ -29,6 +29,9 @@ extern "C"
         uint8_t ccd_Compress_data[100]; // CCD压缩数据
         uint8_t ccd_state;              // CCD状态
         uint16_t ccd_slope_max;
+				uint16_t ccd_slope_max_left;
+							uint16_t ccd_slope_max_rightt;
+
         // 应用层
         int ccd_slope_max_pos;
     } CCD_t;
