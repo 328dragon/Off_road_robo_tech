@@ -42,8 +42,8 @@
 "robot\interrupt.o"
 "robot\pid.o"
 "robot\motor.o"
-"robot\encoder.o"
 "robot\atk_ms53l0m.o"
+"robot\ccd.o"
 --strict --scatter "robot\robot.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

@@ -57,7 +57,6 @@ void Motor::dc_motor::motor_init(void)
 	HAL_TIM_Encoder_Start(&motor_encoder_tim, TIM_CHANNEL_ALL);
 	PID_struct_init(&vel_pid, POSITION_PID, 90, 70,100, 0.5, 0.05);//这个参数能跑到3m/s左右
 
-	// motor_output(10);
 }
 
 void Motor::dc_motor::get_motor_speed()
@@ -69,13 +68,6 @@ void Motor::dc_motor::get_motor_speed()
 		encoder_get -= 65535;
 	}
 	__HAL_TIM_SET_COUNTER(&motor_encoder_tim, 0);
-		speed = ((((encoder_get*1.00f*2*PI)/encoder_ppr)* (wheel_diameter/2.0)) / (Reduction_ratio * 1000))/(0.01) ; //单位m/s
-//		speed =( (encoder_get * PI * wheel_diameter) /
-//	        (encoder_ppr * Reduction_ratio * 0.01))/1000;
-//	speed = encoder_get;
-	//	if(dir==0)
-	//	{
-	//		speed=-speed;
-	//	}
+	speed = ((((encoder_get*1.00f*2*PI)/encoder_ppr)* (wheel_diameter/2.0)) / (Reduction_ratio * 1000))/(0.01) ; //单位m/s
 	current_wheel_speed = speed;
 }

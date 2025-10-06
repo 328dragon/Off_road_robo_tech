@@ -804,16 +804,6 @@
               <FilePath>..\Hardwares\motor.cpp</FilePath>
             </File>
             <File>
-              <FileName>encoder.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\Hardwares\encoder.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>encoder.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Hardwares\encoder.h</FilePath>
-            </File>
-            <File>
               <FileName>ATK_MS53L0M.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\Hardwares\ATK_MS53L0M.cpp</FilePath>
@@ -822,6 +812,11 @@
               <FileName>ATK_MS53L0M.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\Hardwares\ATK_MS53L0M.h</FilePath>
+            </File>
+            <File>
+              <FileName>ccd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Hardwares\ccd.c</FilePath>
             </File>
           </Files>
         </Group>
