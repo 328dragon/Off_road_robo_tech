@@ -8,8 +8,8 @@
 //ccd数据
 CCD_t front_ccd;
 using namespace Motor;
-extern Motor::dc_motor motorl;
-extern Motor::dc_motor motorr;
+Motor::dc_motor motorl(htim8, TIM_CHANNEL_4, PH1_GPIO_Port, PH1_Pin, htim3, 1);
+Motor::dc_motor motorr(htim8, TIM_CHANNEL_3, PH2_GPIO_Port, PH2_Pin, htim2, 0);
 
 TaskHandle_t main_rtos_handle;       // 主函数
 TaskHandle_t state_update_handle;    // 状态更新
