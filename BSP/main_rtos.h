@@ -3,7 +3,7 @@
 #ifdef __cplusplus
 #include "cmsis_os.h"
 #include "main.h"
-
+#include <stdio.h>
 extern "C" {
 #endif
 

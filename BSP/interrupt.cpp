@@ -1,6 +1,8 @@
 #include "interrupt.h"
 extern Motor::dc_motor motorl;
 extern Motor::dc_motor motorr;
+extern CCD_t front_ccd;
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if(huart == &huart3)
@@ -33,7 +35,21 @@ motorr.get_motor_speed();
 if(htim==&htim12)
 {
 motorl.motor_output(pid_calc(&motorl.vel_pid,motorl.current_wheel_speed,motorl.target_wheel_speed));
-	motorr.motor_output(pid_calc(&motorr.vel_pid,motorr.current_wheel_speed,motorr.target_wheel_speed));
+motorr.motor_output(pid_calc(&motorr.vel_pid,motorr.current_wheel_speed,motorr.target_wheel_speed));
 }
 
+}
+
+
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+ccd_exti_callback(&front_ccd,GPIO_Pin);
+
+}
+
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+ccd_spi_rx_cplt_callback(&front_ccd,hspi);
+	
 }
