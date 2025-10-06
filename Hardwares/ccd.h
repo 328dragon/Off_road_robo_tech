@@ -7,7 +7,7 @@ extern "C"
     // 开始
 
 #include "spi.h"
-
+#include "string.h"
     enum CCD_State_t
     {
         CCD_WAIT = 0,

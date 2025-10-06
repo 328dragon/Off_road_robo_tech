@@ -27,14 +27,14 @@ void ccd_dr_irq(CCD_t *ccd)
     else
     {
         HAL_GPIO_WritePin(ccd->CCD_SPI_CS_Port, ccd->CCD_SPI_CS_Pin, GPIO_PIN_RESET);
-        HAL_SPI_Receive_DMA(&ccd->ccd_hspi, ccd->ccd_dma_rx_buf, sizeof(ccd->ccd_dma_rx_buf));
+        HAL_SPI_Receive_DMA(ccd->ccd_hspi, ccd->ccd_dma_rx_buf, sizeof(ccd->ccd_dma_rx_buf));
     }
 }
 void ccd_dma_ok(CCD_t *ccd)
 {
 
     HAL_GPIO_WritePin(ccd->CCD_SPI_CS_Port, ccd->CCD_SPI_CS_Pin, GPIO_PIN_SET);
-    HAL_SPI_DMAStop(&ccd->ccd_hspi);
+    HAL_SPI_DMAStop(ccd->ccd_hspi);
 
     for (int i = 0; i < 5; i++) // spi速率过高前面会出现部分上一次数据, 在前几个数据里面查找帧头
     {
