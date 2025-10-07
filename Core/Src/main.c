@@ -106,7 +106,7 @@ int main(void)
   MX_TIM13_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-HAL_Delay(2000);
+//HAL_Delay(2000);
   main_rtos();
 
   /* USER CODE END 2 */

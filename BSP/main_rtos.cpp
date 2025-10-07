@@ -17,11 +17,11 @@ void usart2_callback(void)
 if(uart2.recv_buff[0]==0xA5&&uart2.recv_buff[4]==0x5A)
 {
 	//"start检验"
-if(uart2.recv_buff[1]==0x00&&uart2.recv_buff[2]==0x13&&uart2.recv_buff[3]==0x13)
+if(uart2.recv_buff[1]==0x13&&uart2.recv_buff[2]==0x00&&uart2.recv_buff[3]==0x13)
 {
 start_flag=1;
 }
-if(uart2.recv_buff[1]==0x42&&uart2.recv_buff[2]==0x0A&&uart2.recv_buff[3]==0x4C)
+if(uart2.recv_buff[1]==0x0A&&uart2.recv_buff[2]==0x42&&uart2.recv_buff[3]==0x4C)
 {
 stop_flag=1;
 }
