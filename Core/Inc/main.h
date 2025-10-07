@@ -63,7 +63,6 @@ void Error_Handler(void);
 #define E1B_GPIO_Port GPIOA
 #define stop_car_Pin GPIO_PIN_2
 #define stop_car_GPIO_Port GPIOB
-#define stop_car_EXTI_IRQn EXTI2_IRQn
 #define E3B_Pin GPIO_PIN_6
 #define E3B_GPIO_Port GPIOC
 #define E3A_Pin GPIO_PIN_7
