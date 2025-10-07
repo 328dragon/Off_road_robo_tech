@@ -3,6 +3,7 @@
         "gpio.h": "c",
         "ccd.h": "c",
         "spi.h": "c",
-        "compare": "c"
+        "compare": "c",
+        "pid.h": "c"
     }
 }

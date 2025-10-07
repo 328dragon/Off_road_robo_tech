@@ -3,6 +3,9 @@
 #define right_ccd_limit 22
 #define ccd_center 50
 
+pid_t revise_ccd_pid;
+extern Motor::dc_motor motorl;
+extern Motor::dc_motor motorr;
 
 float  speed_normal=1;
 float  speed_revise =0;
@@ -27,8 +30,18 @@ temp_revise=_normal_speed/60.0f;//
 return temp_revise;
 }
 
-extern Motor::dc_motor motorl;
-extern Motor::dc_motor motorr;
+float revise_pro_pid_cal(pid_t *pid,float get,float set)
+{
+return pid_calc(pid,get,set);
+}
+
+
+void car_state::car_init(void)
+{
+PID_struct_init(&revise_ccd_pid,POSITION_PID,0.1,0.02,0,0,0);
+
+}
+
 car_state::car_state()
 {   
     target_speedl = speed_normal;

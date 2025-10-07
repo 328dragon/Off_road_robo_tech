@@ -29,6 +29,13 @@
 *******************************************************************************/
 #ifndef __pid_H
 #define __pid_H
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+    // 开始
+
 /* Includes ------------------------------------------------------------------*/
 #include "stdint.h"
 
@@ -92,5 +99,8 @@ void PID_struct_init(
 void pid_reset(pid_t *pid, float kp, float ki, float kd);
 float pid_calc(pid_t *pid, float get, float set);
 float pid_sp_calc(pid_t *pid, float get, float set, float gyro);
-
+		//结束
+#ifdef __cplusplus
+}
+#endif
 #endif

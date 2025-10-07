@@ -24,7 +24,7 @@ class car_state
         int   car_line_error;
         int   data_processing_flag;
 
-
+				void car_init(void);
         void vel_Control(void);
         void pos_update(int ccd_pos);
         car_state();
