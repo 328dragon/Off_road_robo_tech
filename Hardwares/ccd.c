@@ -21,9 +21,10 @@ void CCD_Init(CCD_t *ccd,
     ccd->CCD_SPI_CS_Pin = CCD_SPI_CS_Pin;
     ccd->ccd_hspi = ccd_hspi;
     ccd->ccd_state = CCD_WAIT;
-    ccd->ccd_slope_max = 0;
-    ccd->ccd_slope_max_left = 0;
-    ccd->ccd_slope_max_rightt = 0;
+    ccd->slope_up_max = 0;
+    ccd->slope_down_max = 0;
+    ccd->slope_up_max_pos = -1;
+    ccd->slope_down_max_pos = -1;
 
     ccd->ccd_slope_max_pos = -1;
 
@@ -94,73 +95,36 @@ void ccd_data_process(CCD_t *ccd)
     }
     // 遍历所有区域找斜率最大点
 
-    //    for (int i = 0; i < 100; i++)
-    //    {
-
-    //        if (i > left_limit && i < right_limit)
-    //        {
-    //            int slope_temp = 0;
-    //            if (ccd->ccd_Compress_data[i + 1] >= ccd->ccd_Compress_data[i])
-    //            {
-    //                slope_temp = ccd->ccd_Compress_data[i + 1] - ccd->ccd_Compress_data[i];
-    //            }
-    //            else
-    //            {
-    //                slope_temp = ccd->ccd_Compress_data[i] - ccd->ccd_Compress_data[i + 1];
-    //            }
-    //            if (slope_temp > ccd->ccd_slope_max)
-    //            {
-    //                ccd->ccd_slope_max = slope_temp;
-    //							int temp_slope_mx=i;
-    ////							if(dg_abs(temp_slope_mx-ccd->ccd_slope_max_pos)<10||ccd->ccd_slope_max_pos ==-1)
-    //                ccd->ccd_slope_max_pos = i;
-    //            }
-    //        }
-    //    }
-    int left_i = 0;
-    for (int i = 0; i < 50; i++)
+    for (int i = 0; i < 100; i++)
     {
 
         if (i > left_limit && i < right_limit)
         {
-            int slope_temp = 0;
+            int slope_temp_up = 0;
+            int slope_temp_down = 0;
+            // 找上升沿最高
             if (ccd->ccd_Compress_data[i + 1] >= ccd->ccd_Compress_data[i])
             {
-                slope_temp = ccd->ccd_Compress_data[i + 1] - ccd->ccd_Compress_data[i];
+                slope_temp_up = ccd->ccd_Compress_data[i + 1] - ccd->ccd_Compress_data[i];
             }
-            else
+            // 下降沿最高
+            if (ccd->ccd_Compress_data[i + 1] < ccd->ccd_Compress_data[i])
             {
-                slope_temp = ccd->ccd_Compress_data[i] - ccd->ccd_Compress_data[i + 1];
+                slope_temp_down = ccd->ccd_Compress_data[i] - ccd->ccd_Compress_data[i + 1];
             }
-            if (slope_temp > ccd->ccd_slope_max_left )
+            if (slope_temp_up > ccd->slope_up_max)
             {
-                ccd->ccd_slope_max_left = slope_temp;
-                left_i = i;
+                ccd->slope_up_max = slope_temp_up;
+                ccd->slope_up_max_pos = i;
+            }
+            if (slope_temp_down > ccd->slope_down_max)
+            {
+                ccd->slope_down_max = slope_temp_down;
+                ccd->slope_down_max_pos = i;
             }
         }
     }
-    int right_i = 0;
-    for ( i = 50; i < 100; i++)
-    {
-
-        if ( i < right_limit)
-        {
-            int slope_temp = 0;
-            if (ccd->ccd_Compress_data[i + 1] >= ccd->ccd_Compress_data[i])
-            {
-                slope_temp = ccd->ccd_Compress_data[i + 1] - ccd->ccd_Compress_data[i];
-            }
-            else
-            {
-                slope_temp = ccd->ccd_Compress_data[i] - ccd->ccd_Compress_data[i + 1];
-            }
-            if (slope_temp > ccd->ccd_slope_max_rightt)
-            {
-                ccd->ccd_slope_max_rightt = slope_temp;
-                right_i = i;
-            }
-        }
-    }
-    ccd->ccd_slope_max_pos = (left_i + right_i) / 2;
-    ccd->ccd_slope_max = 0;
+ ccd->slope_down_max =0;
+  ccd->slope_down_max = 0;
+ccd->ccd_slope_max_pos= (ccd->slope_down_max_pos +ccd->slope_up_max_pos)/2;
 }
