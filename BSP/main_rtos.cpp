@@ -26,6 +26,7 @@ void main_rtos(void)
 
     motorl.motor_init();
     motorr.motor_init();
+		car.car_init();
     CCD_Init(&front_ccd, DR_IRQ_GPIO_Port, DR_IRQ_Pin, SPI_CS_GPIO_Port, SPI_CS_Pin, &hspi3);
     BaseType_t task1 = xTaskCreate(state_update, "state_update", 200, NULL, 4,
                                    &state_update_handle);

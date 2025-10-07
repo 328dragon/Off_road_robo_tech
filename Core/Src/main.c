@@ -105,7 +105,7 @@ int main(void)
   MX_TIM12_Init();
   MX_TIM13_Init();
   /* USER CODE BEGIN 2 */
-
+HAL_Delay(2000);
   main_rtos();
 
   /* USER CODE END 2 */

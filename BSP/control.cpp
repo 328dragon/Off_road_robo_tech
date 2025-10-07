@@ -7,7 +7,7 @@ pid_t revise_ccd_pid;
 extern Motor::dc_motor motorl;
 extern Motor::dc_motor motorr;
 
-float  speed_normal=1;
+float  speed_normal=1.5;
 float  speed_revise =0;
 
 float revise_proportional(float _normal_speed)
@@ -39,7 +39,6 @@ return pid_calc(pid,get,set);
 void car_state::car_init(void)
 {
 PID_struct_init(&revise_ccd_pid,POSITION_PID,0.1,0.02,0,0,0);
-
 }
 
 car_state::car_state()
