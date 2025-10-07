@@ -5,6 +5,37 @@
 #include "ATK_MS53L0M.h"
 #include "ccd.h"
 #include "control.h"
+#include "bsp_usart.h"
+
+__IO int start_flag=0;
+__IO int stop_flag=0;
+
+USARTInstance uart2 = {0};
+void usart2_callback(void)
+{
+	//帧头帧尾校验
+if(uart2.recv_buff[0]==0xA5&&uart2.recv_buff[4]==0x5A)
+{
+	//"start检验"
+if(uart2.recv_buff[1]==0x00&&uart2.recv_buff[2]==0x13&&uart2.recv_buff[3]==0x13)
+{
+start_flag=1;
+}
+if(uart2.recv_buff[1]==0x42&&uart2.recv_buff[2]==0x0A&&uart2.recv_buff[3]==0x4C)
+{
+stop_flag=1;
+}
+
+}
+	
+}
+
+USART_Init_Config_s uart2_cfg = {
+    .recv_buff_size = 10,
+    .usart_handle = &huart2,
+    .module_callback = usart2_callback,
+};
+
 #define abs(x) (((x) > 0) ? (x) : (-(x)))
 // ccd数据
 CCD_t front_ccd;
@@ -23,7 +54,8 @@ void pattern_switch(void *pvparameters);
 
 void main_rtos(void)
 {
-
+  USARTRegister(&uart2, &uart2_cfg);
+	  memset(uart2.recv_buff, 0, uart2.recv_buff_size);
     motorl.motor_init();
     motorr.motor_init();
 		car.car_init();

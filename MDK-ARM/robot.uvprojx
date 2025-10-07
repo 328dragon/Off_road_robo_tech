@@ -788,6 +788,11 @@
               <FileType>1</FileType>
               <FilePath>..\BSP\pid.c</FilePath>
             </File>
+            <File>
+              <FileName>bsp_usart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\bsp_usart.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

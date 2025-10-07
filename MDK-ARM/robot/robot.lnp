@@ -41,6 +41,7 @@
 "robot\main_rtos.o"
 "robot\interrupt.o"
 "robot\pid.o"
+"robot\bsp_usart.o"
 "robot\motor.o"
 "robot\atk_ms53l0m.o"
 "robot\ccd.o"
