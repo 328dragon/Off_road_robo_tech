@@ -77,9 +77,12 @@ void ccd_spi_rx_cplt_callback(CCD_t *ccd, SPI_HandleTypeDef *hspi)
         ccd_dma_ok(ccd);
     }
 }
-// 处理函数
+/// 处理函数
 void ccd_data_process(CCD_t *ccd)
-{
+{   int slope_temp_up = 0;
+    int slope_temp_down = 0;
+    uint16_t temp_up_pos_max=0;
+	uint16_t temp_down_pos_max=0;
     // 压缩数据，10个平均一下
     if (ccd->ccd_state == CCD_OK)
     {
@@ -93,15 +96,12 @@ void ccd_data_process(CCD_t *ccd)
         }
         ccd->ccd_state = CCD_WAIT;
     }
-    // 遍历所有区域找斜率最大点
 
+    // 遍历所有区域找斜率最大点   
     for (int i = 0; i < 100; i++)
     {
-
         if (i > left_limit && i < right_limit)
         {
-            int slope_temp_up = 0;
-            int slope_temp_down = 0;
             // 找上升沿最高
             if (ccd->ccd_Compress_data[i + 1] >= ccd->ccd_Compress_data[i])
             {
@@ -111,20 +111,25 @@ void ccd_data_process(CCD_t *ccd)
             if (ccd->ccd_Compress_data[i + 1] < ccd->ccd_Compress_data[i])
             {
                 slope_temp_down = ccd->ccd_Compress_data[i] - ccd->ccd_Compress_data[i + 1];
-            }
+            }		
             if (slope_temp_up > ccd->slope_up_max)
-            {
-                ccd->slope_up_max = slope_temp_up;
-                ccd->slope_up_max_pos = i;
+            {		
+				ccd->slope_up_max = slope_temp_up;
+			    temp_up_pos_max = i;
             }
             if (slope_temp_down > ccd->slope_down_max)
             {
-                ccd->slope_down_max = slope_temp_down;
-                ccd->slope_down_max_pos = i;
+				ccd->slope_down_max = slope_temp_down;
+				temp_down_pos_max = i;
             }
+			if(temp_down_pos_max >= temp_up_pos_max)
+			{
+				ccd->slope_up_max_pos = temp_up_pos_max;
+				ccd->slope_down_max_pos = temp_down_pos_max;
+			}
         }
     }
  ccd->slope_down_max =0;
-  ccd->slope_down_max = 0;
+ ccd->slope_up_max = 0;
 ccd->ccd_slope_max_pos= (ccd->slope_down_max_pos +ccd->slope_up_max_pos)/2;
 }

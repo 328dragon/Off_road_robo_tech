@@ -26,9 +26,9 @@ class tof_data
         uint8_t MS53L0M_TX_buffer[MS53L0M_MAX_SEND_LEN] = {0};			//?????
         void data_receive(void);
         void data_processing(void);
-        tof_data();//???????
+        tof_data();//
 };
 
-inline tof_data atk_ms53l0m;  //??????
+inline tof_data atk_ms53l0m;  //
 
 #endif

@@ -1,7 +1,7 @@
 #include "control.h"
 #define left_ccd_limit 78
 #define right_ccd_limit 22
-#define ccd_center 50
+#define ccd_center  49
 
 pid_t revise_ccd_pid;
 extern Motor::dc_motor motorl;
@@ -9,6 +9,17 @@ extern Motor::dc_motor motorr;
 
 float  speed_normal=1.5;
 float  speed_revise =0;
+
+
+float f(float error, int state)
+{   
+    if(state == close)
+        return (error-2);
+    else if(state == far)
+        return 0.1*(error-2)*(error-2);
+		else
+				return 0;
+}
 
 float revise_proportional(float _normal_speed)
 {
@@ -38,7 +49,7 @@ return pid_calc(pid,get,set);
 
 void car_state::car_init(void)
 {
-PID_struct_init(&revise_ccd_pid,POSITION_PID,0.1,0.02,0,0,0);
+PID_struct_init(&revise_ccd_pid,POSITION_PID,0.5,0,0.02,0,0.01);
 }
 
 car_state::car_state()
@@ -54,9 +65,12 @@ void car_state::vel_Control(void)
 {   
     if(data_processing_flag == 0)
     {
-			speed_revise=revise_proportional(speed_normal);
-        target_speedl = speed_normal + car_pos*car_line_error*speed_revise;
-        target_speedr = speed_normal - car_pos*car_line_error*speed_revise;
+		speed_revise = revise_pro_pid_cal(&revise_ccd_pid, car_line_error, 0);
+
+
+        target_speedl = speed_normal - car_pos*speed_revise;
+        target_speedr = speed_normal + car_pos*speed_revise;
+
 
         motorl.motor_close_vel(target_speedl);
         motorr.motor_close_vel(target_speedr);
