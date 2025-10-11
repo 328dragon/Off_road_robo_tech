@@ -1,8 +1,7 @@
 #include "ccd.h"
-#define left_limit 15
-#define right_limit 85
-#define two_line_distance 25
-	static int ccd_slope_max_pos_last=50;
+
+#define two_line_distance 32
+	static int ccd_slope_max_pos_last=100;
 static	int ccd_time=0;
 
 void ccd_dr_irq(CCD_t *ccd);
@@ -83,18 +82,18 @@ void ccd_data_process(CCD_t *ccd)
     if (ccd->ccd_state == CCD_OK)
     {
         memset(ccd->ccd_Compress_data, 0, sizeof(ccd->ccd_Compress_data));
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 200; i++)
         {
-            for (int j = 0; j < 10; j++)
+            for (int j = 0; j < 5; j++)
             {
-                ccd->ccd_Compress_data[i] += ccd->ccd_origin_data[i * 10 + j] / 10;
+                ccd->ccd_Compress_data[i] += ccd->ccd_origin_data[i * 5 + j] / 5;
             }
         }
         ccd->ccd_state = CCD_WAIT;
     }
 
     // 遍历所有区域找斜率最大点   
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 200; i++)
     {
         if (i > left_limit && i < right_limit)
         {
