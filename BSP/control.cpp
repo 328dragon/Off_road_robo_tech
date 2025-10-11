@@ -1,15 +1,14 @@
 #include "control.h"
 #define left_ccd_limit 78
 #define right_ccd_limit 22
-#define ccd_center  49
+#define ccd_center 49
 
 pid_t revise_ccd_pid;
 extern Motor::dc_motor motorl;
 extern Motor::dc_motor motorr;
 
-float  speed_normal=1.5;
+float  speed_normal = 1.5;
 float  speed_revise =0;
-
 
 float f(float error, int state)
 {   
@@ -35,7 +34,6 @@ temp_revise=_normal_speed/30.0f;
 if(_normal_speed>1&&_normal_speed<=1.5)
 {
 temp_revise=_normal_speed/60.0f;//
-
 }
 
 return temp_revise;
@@ -45,7 +43,6 @@ float revise_pro_pid_cal(pid_t *pid,float get,float set)
 {
 return pid_calc(pid,get,set);
 }
-
 
 void car_state::car_init(void)
 {
@@ -67,10 +64,8 @@ void car_state::vel_Control(void)
     {
 		speed_revise = revise_pro_pid_cal(&revise_ccd_pid, car_line_error, 0);
 
-
         target_speedl = speed_normal - car_pos*speed_revise;
         target_speedr = speed_normal + car_pos*speed_revise;
-
 
         motorl.motor_close_vel(target_speedl);
         motorr.motor_close_vel(target_speedr);
@@ -85,15 +80,31 @@ void car_state::pos_update(int ccd_pos)
         car_pos = straight;
         car_line_error = 0;
     }
-    else if (ccd_pos<(ccd_center+2)&&ccd_pos>=(right_ccd_limit))
+    else if (ccd_pos<(ccd_center-2)&&ccd_pos>=(right_ccd_limit))
     {
         car_pos=right;
-        car_line_error=ccd_center-ccd_pos;
+        if(ccd_pos<(ccd_center-12)&&ccd_pos>=(right_ccd_limit))
+        {
+            car_error_state = far;
+        }
+        else if(ccd_pos<(ccd_center-2)&&ccd_pos>=(ccd_center-12))
+        {
+            car_error_state = close;
+        }
+        car_line_error = f((ccd_center-ccd_pos), car_error_state);
     }
-    else if(ccd_pos>(ccd_center-2)&&ccd_pos<=(left_ccd_limit))
+    else if(ccd_pos>(ccd_center+2)&&ccd_pos<=(left_ccd_limit))
     {
         car_pos=left;
-        car_line_error=ccd_pos-ccd_center;
+        if(ccd_pos<(left_ccd_limit)&&ccd_pos>=(ccd_center+12))
+        {
+            car_error_state = far;
+        }
+        else if(ccd_pos<(ccd_center+12)&&ccd_pos>=(ccd_center+2))
+        {
+            car_error_state = close;
+        }
+        car_line_error = f((ccd_pos-ccd_center), car_error_state);
     }
 data_processing_flag=0;
 }

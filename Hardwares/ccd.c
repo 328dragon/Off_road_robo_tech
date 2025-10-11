@@ -77,7 +77,7 @@ void ccd_spi_rx_cplt_callback(CCD_t *ccd, SPI_HandleTypeDef *hspi)
         ccd_dma_ok(ccd);
     }
 }
-/// 处理函数
+// 处理函数
 void ccd_data_process(CCD_t *ccd)
 {   int slope_temp_up = 0;
     int slope_temp_down = 0;
