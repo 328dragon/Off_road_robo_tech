@@ -1,14 +1,10 @@
 #include "ccd.h"
-#define left_limit 22
-#define right_limit 78
+#define left_limit 15
+#define right_limit 85
+#define two_line_distance 25
+	static int ccd_slope_max_pos_last=50;
+static	int ccd_time=0;
 
-int dg_abs(int x)
-{
-    if (x >= 0)
-        return x;
-    else
-        return -x;
-}
 void ccd_dr_irq(CCD_t *ccd);
 void CCD_Init(CCD_t *ccd,
               GPIO_TypeDef *DR_IRQ_Port, uint16_t _DR_IRQ_Pin, GPIO_TypeDef *CCD_SPI_CS_Port,
@@ -21,8 +17,6 @@ void CCD_Init(CCD_t *ccd,
     ccd->CCD_SPI_CS_Pin = CCD_SPI_CS_Pin;
     ccd->ccd_hspi = ccd_hspi;
     ccd->ccd_state = CCD_WAIT;
-    ccd->slope_up_max = 0;
-    ccd->slope_down_max = 0;
     ccd->slope_up_max_pos = -1;
     ccd->slope_down_max_pos = -1;
 
@@ -79,10 +73,12 @@ void ccd_spi_rx_cplt_callback(CCD_t *ccd, SPI_HandleTypeDef *hspi)
 }
 // 处理函数
 void ccd_data_process(CCD_t *ccd)
-{   int slope_temp_up = 0;
-    int slope_temp_down = 0;
+{  
+	int slope_temp_up_max=0;
+	int slope_temp_down_max = 0;
     uint16_t temp_up_pos_max=0;
 	uint16_t temp_down_pos_max=0;
+
     // 压缩数据，10个平均一下
     if (ccd->ccd_state == CCD_OK)
     {
@@ -102,34 +98,44 @@ void ccd_data_process(CCD_t *ccd)
     {
         if (i > left_limit && i < right_limit)
         {
-            // 找上升沿最高
+             int slope_temp_up = 0;
+						int slope_temp_down = 0;
             if (ccd->ccd_Compress_data[i + 1] >= ccd->ccd_Compress_data[i])
             {
                 slope_temp_up = ccd->ccd_Compress_data[i + 1] - ccd->ccd_Compress_data[i];
             }
-            // 下降沿最高
+            
             if (ccd->ccd_Compress_data[i + 1] < ccd->ccd_Compress_data[i])
             {
                 slope_temp_down = ccd->ccd_Compress_data[i] - ccd->ccd_Compress_data[i + 1];
             }		
-            if (slope_temp_up > ccd->slope_up_max)
+						
+            if (slope_temp_up >slope_temp_up_max)
             {		
-				ccd->slope_up_max = slope_temp_up;
-			    temp_up_pos_max = i;
+						slope_temp_up_max= slope_temp_up;
+						temp_up_pos_max = i;
             }
-            if (slope_temp_down > ccd->slope_down_max)
+            if (slope_temp_down > slope_temp_down_max)
             {
-				ccd->slope_down_max = slope_temp_down;
-				temp_down_pos_max = i;
+						slope_temp_down_max = slope_temp_down;
+						temp_down_pos_max = i;
             }
-			if(temp_down_pos_max >= temp_up_pos_max)
-			{
-				ccd->slope_up_max_pos = temp_up_pos_max;
-				ccd->slope_down_max_pos = temp_down_pos_max;
-			}
+
         }
     }
- ccd->slope_down_max =0;
- ccd->slope_up_max = 0;
+		
+		
+					if(temp_down_pos_max >= temp_up_pos_max)
+			{
+				int temp_middle_max_pos= (temp_down_pos_max +temp_up_pos_max)/2;
+				//第一次不用判断是否离中心过远
+	 if(((temp_middle_max_pos-ccd_slope_max_pos_last)<=two_line_distance)||((temp_middle_max_pos-ccd_slope_max_pos_last)>=-two_line_distance))
+				{
+				ccd->slope_up_max_pos = temp_up_pos_max;
+				ccd->slope_down_max_pos = temp_down_pos_max;
+				}
+			}
+			
 ccd->ccd_slope_max_pos= (ccd->slope_down_max_pos +ccd->slope_up_max_pos)/2;
+ccd_slope_max_pos_last=ccd->ccd_slope_max_pos;
 }

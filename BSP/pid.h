@@ -72,13 +72,13 @@ typedef struct __pid_t
     float max_err;
     float deadband; // err < deadband return
     uint32_t pid_mode;
-    uint32_t MaxOutput;     
-    uint32_t IntegralLimit; 
+    float MaxOutput;     
+    float IntegralLimit; 
 
     void (*f_param_init)(struct __pid_t *pid, 
                          uint32_t pid_mode,
-                         uint32_t maxOutput,
-                         uint32_t integralLimit,
+                         float maxOutput,
+                         float integralLimit,
                          float p,
                          float i,
                          float d);
@@ -89,8 +89,8 @@ typedef struct __pid_t
 void PID_struct_init(
     pid_t *pid,
     uint32_t mode,
-    uint32_t maxout,
-    uint32_t intergral_limit,
+    float maxout,
+    float intergral_limit,
 
     float kp,
     float ki,

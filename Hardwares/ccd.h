@@ -5,7 +5,7 @@ extern "C"
 {
 #endif
     // 开始
-
+#define ccd_center 49
 #include "spi.h"
 #include "string.h"
     enum CCD_State_t
@@ -28,8 +28,6 @@ extern "C"
         uint8_t ccd_origin_data[1000];  // ccd原始数据
         uint8_t ccd_Compress_data[100]; // CCD压缩数据
         uint8_t ccd_state;              // CCD状态
-        uint16_t slope_up_max;
-        uint16_t slope_down_max;
         uint16_t slope_up_max_pos;
         uint16_t slope_down_max_pos;
 
