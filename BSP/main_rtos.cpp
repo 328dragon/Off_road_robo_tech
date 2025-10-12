@@ -60,6 +60,7 @@ void main_rtos(void)
     motorr.motor_init();
 		car.car_init();
     CCD_Init(&front_ccd, DR_IRQ_GPIO_Port, DR_IRQ_Pin, SPI_CS_GPIO_Port, SPI_CS_Pin, &hspi3);
+	pid_reset(&motorl.vel_pid,12,0.1,0.001);
     BaseType_t task1 = xTaskCreate(state_update, "state_update", 200, NULL, 4,
                                    &state_update_handle);
     BaseType_t task2 = xTaskCreate(data_processing, "data_processing", 200, NULL, 4,
@@ -106,7 +107,9 @@ void pattern_switch(void *pvparameters)
         sprintf(tx_ccd, ":%d,%d,%d,%f,%f\r\n", front_ccd.slope_up_max_pos,front_ccd.ccd_slope_max_pos,front_ccd.slope_down_max_pos,car.target_speedl,car.target_speedr);
         HAL_UART_Transmit_DMA(&huart3, (uint8_t *)tx_ccd, 27);
 			}
-			  
+//			      char vel_pid[21];
+//        sprintf(vel_pid, ":%f,%f\r\n",motorl.current_wheel_speed,motorr.current_wheel_speed);
+//        HAL_UART_Transmit_DMA(&huart3, (uint8_t *)vel_pid, 21);		  
         vTaskDelay(200);
     }
 }

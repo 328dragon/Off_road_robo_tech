@@ -18,8 +18,8 @@ GPIO_TypeDef* motor_dir_port;//电机方向控制引脚端口
 uint16_t motor_dir_pin;
 TIM_HandleTypeDef &motor_encoder_tim;//编码器定时器
 int wheel_diameter=104; //轮子B直径，单位mm
-int Reduction_ratio=44;//减速比s
-int encoder_ppr=64; //编码器每转脉冲数
+int Reduction_ratio=35;//电机/编码器：轮子减速比 
+int encoder_ppr=26; //编码器每转脉冲数
 //电机控制参数
 int dir;        //电机方向
 int out_pwm;        //电机PWM占空比
