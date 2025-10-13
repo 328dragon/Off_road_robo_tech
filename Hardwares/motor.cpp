@@ -11,7 +11,7 @@ Motor::dc_motor::dc_motor(TIM_HandleTypeDef &motor_tim, uint32_t motor_channel, 
 
 void Motor::dc_motor::motor_output(int pwm)
 {
-	if (pwm >= 6 && pwm <= 100)
+	if (pwm >= 0 && pwm <= 100)
 	{
 		if (dir == 1)
 		{
@@ -23,7 +23,7 @@ void Motor::dc_motor::motor_output(int pwm)
 			HAL_GPIO_WritePin(motor_dir_port, motor_dir_pin, GPIO_PIN_SET);
 		}
 	}
-	else if (pwm < -6 && pwm >= -100)
+	else if (pwm < -0 && pwm >= -100)
 	{
 		pwm = -pwm;
 		if (dir == 1)
@@ -54,7 +54,12 @@ void Motor::dc_motor::motor_init(void)
 	HAL_TIM_Base_Start_IT(&htim12); // 计算pid
 	HAL_TIM_PWM_Start(&motor_pwm_tim, motor_pwm_channel);
 	HAL_TIM_Encoder_Start(&motor_encoder_tim, TIM_CHANNEL_ALL);
+//<<<<<<< Updated upstream
 	PID_struct_init(&vel_pid, POSITION_PID, 90, 70,13, 0.009, 0.11);//右边电机这个参数没问题
+//=======
+	PID_struct_init(&vel_pid, POSITION_PID, 2, 2, 1, 0.1, 0.05);
+	PID_struct_init(&vel_pid, POSITION_PID, 2, 2, 1, 0.1, 0.05);
+//>>>>>>> Stashed changes
 
 }
 

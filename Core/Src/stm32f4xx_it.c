@@ -22,6 +22,8 @@
 #include "stm32f4xx_it.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "tim.h"
+#include "HCSR04.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 extern __IO int ccd_data_ok;
@@ -68,6 +70,7 @@ extern DMA_HandleTypeDef hdma_usart3_rx;
 extern DMA_HandleTypeDef hdma_usart3_tx;
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
+
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -191,6 +194,23 @@ void SysTick_Handler(void)
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32f4xx.s).                    */
 /******************************************************************************/
+
+/**
+  * @brief This function handles EXTI line0 interrupt.
+  */
+void EXTI0_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI0_IRQn 0 */
+	__HAL_TIM_SetCounter(&htim11,0);
+		while(HAL_GPIO_ReadPin(ECHO_GPIO_Port, ECHO_Pin) == 1)
+		{Time=__HAL_TIM_GET_COUNTER(&htim11);
+		}
+  /* USER CODE END EXTI0_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(ECHO_Pin);
+  /* USER CODE BEGIN EXTI0_IRQn 1 */
+
+  /* USER CODE END EXTI0_IRQn 1 */
+}
 
 /**
   * @brief This function handles DMA1 stream0 global interrupt.

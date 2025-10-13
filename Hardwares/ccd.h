@@ -5,9 +5,9 @@ extern "C"
 {
 #endif
     // 开始
-#define ccd_center 100
-	#define left_limit 15
-#define right_limit 185
+#define ccd_center 98
+	#define left_limit 13
+#define right_limit 183
 #include "spi.h"
 #include "string.h"
     enum CCD_State_t

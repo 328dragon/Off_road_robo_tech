@@ -61,6 +61,11 @@ void Error_Handler(void);
 #define E1A_GPIO_Port GPIOA
 #define E1B_Pin GPIO_PIN_1
 #define E1B_GPIO_Port GPIOA
+#define ECHO_Pin GPIO_PIN_0
+#define ECHO_GPIO_Port GPIOB
+#define ECHO_EXTI_IRQn EXTI0_IRQn
+#define TRIG_Pin GPIO_PIN_1
+#define TRIG_GPIO_Port GPIOB
 #define stop_car_Pin GPIO_PIN_2
 #define stop_car_GPIO_Port GPIOB
 #define E3B_Pin GPIO_PIN_6

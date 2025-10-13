@@ -4,6 +4,7 @@ extern Motor::dc_motor motorr;
 extern CCD_t front_ccd;
 extern __IO int start_flag;
 extern __IO int stop_flag;
+extern uint16_t Time;
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 //	if(huart == &huart3)
@@ -44,8 +45,6 @@ else if(stop_flag==0&&start_flag==1)
 {
 motorl.motor_output(pid_calc(&motorl.vel_pid,motorl.current_wheel_speed,motorl.target_wheel_speed));
 motorr.motor_output(pid_calc(&motorr.vel_pid,motorr.current_wheel_speed,motorr.target_wheel_speed));
-	
-	
 }
 }
 }
@@ -63,4 +62,12 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 ccd_spi_rx_cplt_callback(&front_ccd,hspi);
 	
+}
+
+void HCSR04_IRQHandler(void)
+{
+  __HAL_TIM_SetCounter(&htim11,0);
+		while(HAL_GPIO_ReadPin(ECHO_GPIO_Port, ECHO_Pin) == 1)
+		{Time=__HAL_TIM_GET_COUNTER(&htim11);
+		}
 }
