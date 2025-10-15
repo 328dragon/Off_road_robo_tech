@@ -2,14 +2,13 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "motor.h"
-#include "ATK_MS53L0M.h"
 #include "ccd.h"
 #include "control.h"
 #include "bsp_usart.h"
-
+ #include "SR04.h"
 __IO int start_flag=0;		
 __IO int stop_flag=0;
-USARTInstance uart1 = {0};
+
 USARTInstance uart3 = {0};
 void usart3_callback(void)
 {
@@ -36,6 +35,8 @@ USART_Init_Config_s uart3_cfg = {
     .module_callback = usart3_callback,
 };
 
+SR04_t SR04_front;
+
 #define abs(x) (((x) > 0) ? (x) : (-(x)))
 // ccd数据
 CCD_t front_ccd;
@@ -56,6 +57,9 @@ void main_rtos(void)
 {
     USARTRegister(&uart3, &uart3_cfg);
 	memset(uart3.recv_buff, 0, uart3.recv_buff_size);
+    //超声波
+	HAL_TIM_Base_Start_IT(&htim11);												 
+  SR04_Register(&SR04_front, SR04_TIRG_GPIO_Port, SR04_TIRG_Pin, &htim5, TIM_CHANNEL_3);
     motorl.motor_init();
     motorr.motor_init();
 		car.car_init();
@@ -81,7 +85,7 @@ void state_update(void *pvparameters)
 {
     while (1)
     {
-//        car.vel_Control();
+        car.vel_Control();
         vTaskDelay(10);
     }
 }
@@ -101,15 +105,16 @@ void pattern_switch(void *pvparameters)
 {
     while (1)
     {
-//			if(stop_flag==0)
-//			{
-//			      char tx_ccd[27];
-//        sprintf(tx_ccd, ":%d,%d,%d,%f,%f\r\n", front_ccd.slope_up_max_pos,front_ccd.ccd_slope_max_pos,front_ccd.slope_down_max_pos,car.target_speedl,car.target_speedr);
-//        HAL_UART_Transmit_DMA(&huart3, (uint8_t *)tx_ccd, 27);
-//			}
-			      char vel_pid[21];
-        sprintf(vel_pid, ":%f,%f\r\n",motorl.current_wheel_speed,motorr.current_wheel_speed);
-        HAL_UART_Transmit_DMA(&huart3, (uint8_t *)vel_pid, 21);		  
+			if(stop_flag==0)
+			{
+			      char tx_ccd[27];
+        sprintf(tx_ccd, ":%d,%d,%d,%f,%f\r\n", front_ccd.slope_up_max_pos,front_ccd.ccd_slope_max_pos,front_ccd.slope_down_max_pos,car.target_speedl,car.target_speedr);
+        HAL_UART_Transmit_DMA(&huart3, (uint8_t *)tx_ccd, 27);
+			}
+             SR04_GetData(&SR04_front);
+//			      char vel_pid[21];
+//        sprintf(vel_pid, ":%f,%f\r\n",motorl.current_wheel_speed,motorr.current_wheel_speed);
+//        HAL_UART_Transmit_DMA(&huart3, (uint8_t *)vel_pid, 21);		  
         vTaskDelay(200);
     }
 }

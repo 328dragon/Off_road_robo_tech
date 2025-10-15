@@ -4,29 +4,24 @@ extern Motor::dc_motor motorr;
 extern CCD_t front_ccd;
 extern __IO int start_flag;
 extern __IO int stop_flag;
+extern SR04_t SR04_front;
+
+
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-//	if(huart == &huart3)
-//	{
-////		if ((__HAL_UART_GET_FLAG(&huart3, UART_FLAG_RXNE) != RESET)) 
-////		{
-////			atk_ms53l0m.data_receive();
-////		}
 
-////		if ((__HAL_UART_GET_FLAG(&huart3, UART_FLAG_IDLE) != RESET))
-////		{
-////			__HAL_UART_CLEAR_IDLEFLAG(&huart3);
-////			if(atk_ms53l0m.rx_len != 0 && atk_ms53l0m.rx_ok == 0)
-////			{	
-////				atk_ms53l0m.rx_ok = 1;
-////			}
-////		}
-//	}
 		
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+if(htim->Instance==TIM11)
+{
+  SR04_Elapsed_callback(&SR04_front);
+}
+
+
 if(htim==&htim13)
 {
 //10ms
@@ -44,8 +39,6 @@ else if(stop_flag==0&&start_flag==1)
 {
 motorl.motor_output(pid_calc(&motorl.vel_pid,motorl.current_wheel_speed,motorl.target_wheel_speed));
 motorr.motor_output(pid_calc(&motorr.vel_pid,motorr.current_wheel_speed,motorr.target_wheel_speed));
-	
-	
 }
 }
 }
@@ -63,4 +56,13 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 ccd_spi_rx_cplt_callback(&front_ccd,hspi);
 	
+}
+
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+{
+if(htim->Instance==TIM5)
+{
+  SR04_Echo_IC_callback(&SR04_front);
+}
+
 }

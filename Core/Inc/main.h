@@ -36,7 +36,8 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+extern UART_HandleTypeDef huart2;
+extern UART_HandleTypeDef huart3;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -61,8 +62,12 @@ void Error_Handler(void);
 #define E1A_GPIO_Port GPIOA
 #define E1B_Pin GPIO_PIN_1
 #define E1B_GPIO_Port GPIOA
+#define SR04_Echo_Pin GPIO_PIN_2
+#define SR04_Echo_GPIO_Port GPIOA
 #define stop_car_Pin GPIO_PIN_2
 #define stop_car_GPIO_Port GPIOB
+#define SR04_TIRG_Pin GPIO_PIN_12
+#define SR04_TIRG_GPIO_Port GPIOB
 #define E3B_Pin GPIO_PIN_6
 #define E3B_GPIO_Port GPIOC
 #define E3A_Pin GPIO_PIN_7

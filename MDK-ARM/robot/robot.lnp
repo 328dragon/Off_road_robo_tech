@@ -42,9 +42,10 @@
 "robot\interrupt.o"
 "robot\pid.o"
 "robot\bsp_usart.o"
+"robot\bsp_delay.o"
 "robot\motor.o"
-"robot\atk_ms53l0m.o"
 "robot\ccd.o"
+"robot\sr04.o"
 --strict --scatter "robot\robot.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers
