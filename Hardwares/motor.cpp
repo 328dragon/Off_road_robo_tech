@@ -3,6 +3,7 @@
 using namespace Motor;
 
 
+
 Motor::dc_motor::dc_motor(TIM_HandleTypeDef &motor_tim, uint32_t motor_channel, GPIO_TypeDef *dir_port, uint16_t dir_pin, TIM_HandleTypeDef &encoder_tim, int _dir)
 	: motor_pwm_tim(motor_tim), motor_pwm_channel(motor_channel), motor_dir_port(dir_port), motor_dir_pin(dir_pin), motor_encoder_tim(encoder_tim)
 {

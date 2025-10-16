@@ -64,7 +64,7 @@ void main_rtos(void)
     motorr.motor_init();
 		car.car_init();
     CCD_Init(&front_ccd, DR_IRQ_GPIO_Port, DR_IRQ_Pin, SPI_CS_GPIO_Port, SPI_CS_Pin, &hspi3);
-	pid_reset(&motorr.vel_pid,10,0.009,0.13);
+//	pid_reset(&motorr.vel_pid,10,0.009,0.13);
     BaseType_t task1 = xTaskCreate(state_update, "state_update", 200, NULL, 4,
                                    &state_update_handle);
     BaseType_t task2 = xTaskCreate(data_processing, "data_processing", 200, NULL, 4,

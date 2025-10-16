@@ -2,18 +2,19 @@
 #define left_ccd_limit 185
 #define right_ccd_limit 15
 
-#define linear_Limit 2
+#define linear_Limit 5
 #define Quadratic_limit 35
 
-#define linear_k 0.15
-#define  Quadratic_k 0.12
+#define linear_k 0.2
+#define Quadratic_k 0.2
 #define far_linear_k 0.6
 #define three_second_K 0.2
+
 pid_t revise_ccd_pid;
 extern Motor::dc_motor motorl;
 extern Motor::dc_motor motorr;
 
-float  speed_normal = 1;
+float  speed_normal = 1.2;
 float  speed_revise =0;
 
 float f(float error, int state)
@@ -69,14 +70,13 @@ void car_state::vel_Control(void)
 {   
     if(data_processing_flag == 0)
     {
-	speed_revise = revise_pro_pid_cal(&revise_ccd_pid, car_line_error, 0);
+				speed_revise = revise_pro_pid_cal(&revise_ccd_pid, car_line_error, 0);
 //speed_revise=revise_proportional(speed_normal);
-        target_speedl = speed_normal - car_pos*speed_revise;
+        target_speedl = (speed_normal - car_pos*speed_revise);
         target_speedr = speed_normal + car_pos*speed_revise;
 
-        motorl.motor_close_vel(target_speedl);
-        motorr.motor_close_vel(target_speedr);
-        //此处需要速度大小到pwm的转换算法
+//        motorl.motor_close_vel(target_speedl);
+//        motorr.motor_close_vel(target_speedr);
         data_processing_flag = 1;
     }
 }

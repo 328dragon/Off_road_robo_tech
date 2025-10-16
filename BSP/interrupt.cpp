@@ -4,9 +4,12 @@ extern Motor::dc_motor motorr;
 extern CCD_t front_ccd;
 extern __IO int start_flag;
 extern __IO int stop_flag;
+extern car_state car;
 extern SR04_t SR04_front;
 
-
+float pwm_l=0;
+float pwm_r=0;
+#define vel_convert (20/1.5)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -37,8 +40,12 @@ motorr.motor_output(0);
 }	
 else if(stop_flag==0&&start_flag==1)
 {
-motorl.motor_output(pid_calc(&motorl.vel_pid,motorl.current_wheel_speed,motorl.target_wheel_speed));
-motorr.motor_output(pid_calc(&motorr.vel_pid,motorr.current_wheel_speed,motorr.target_wheel_speed));
+//motorl.motor_output(pid_calc(&motorl.vel_pid,motorl.current_wheel_speed,motorl.target_wheel_speed));
+//motorr.motor_output(pid_calc(&motorr.vel_pid,motorr.current_wheel_speed,motorr.target_wheel_speed));
+	pwm_l = car.target_speedl*vel_convert;
+	pwm_r = car.target_speedr*vel_convert;
+	motorl.motor_output(pwm_l);
+	motorr.motor_output(pwm_r);
 }
 }
 }

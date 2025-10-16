@@ -4,6 +4,7 @@ extern "C" {
 #include "main.h"
 #include "tim.h"
 #include "pid.h"
+#include "control.h"
 };
 #define PI 3.1415926
  namespace  Motor{
