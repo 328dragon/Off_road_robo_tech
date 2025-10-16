@@ -6,7 +6,7 @@
 #define Quadratic_limit 35
 
 #define linear_k 0.2
-#define Quadratic_k 0.2
+#define Quadratic_k 0.25
 #define far_linear_k 0.6
 #define three_second_K 0.2
 
@@ -14,7 +14,7 @@ pid_t revise_ccd_pid;
 extern Motor::dc_motor motorl;
 extern Motor::dc_motor motorr;
 
-float  speed_normal = 1.2;
+float  speed_normal = 1.35;
 float  speed_revise =0;
 
 float f(float error, int state)
