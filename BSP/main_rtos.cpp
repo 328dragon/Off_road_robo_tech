@@ -8,7 +8,13 @@
  #include "SR04.h"
 __IO int start_flag=0;		
 __IO int stop_flag=0;
-
+extern float  speed_normal ;
+extern  int turn_rectngle_flag;
+int turn_rectangle_cnt=0;
+int turn_begin_flg=0;
+extern int exsit_turn_rectangle;
+extern float pwm_l;
+extern float pwm_r;
 USARTInstance uart3 = {0};
 void usart3_callback(void)
 {
@@ -85,7 +91,45 @@ void state_update(void *pvparameters)
 {
     while (1)
     {
-        car.vel_Control();
+			switch(car._car_mode)
+			{
+				case normal:
+				{
+//					speed_normal=1.85;
+								car.update_vel_flag=1;
+						speed_normal=1.3;
+		
+						car.vel_Control();
+						break;
+				}			
+				case slow_down:
+				{
+					car.update_vel_flag=1;
+					speed_normal=0.9;
+						car.vel_Control();
+				break;
+				}
+				case turn_state:
+				{
+					car.update_vel_flag=0;
+//					pwm_l=-10;
+//					pwm_r=10;
+						pwm_l=-8;
+					pwm_r=12;
+					break;
+				}				
+				case stop_car:
+				{
+					car.update_vel_flag=0;
+						pwm_l=0;
+					pwm_r=0;
+				break;
+				}
+					
+				default :
+					break;
+			}
+       
         vTaskDelay(10);
     }
 }
@@ -103,18 +147,62 @@ void data_processing(void *pvparameters)
 }
 void pattern_switch(void *pvparameters)
 {
+	int slow_turn_flag=0;
     while (1)
     {
-			if(stop_flag==0)
+//			if(stop_flag==0)
+//			{
+//			      char tx_ccd[27];
+//        sprintf(tx_ccd, ":%d,%d,%d,%f,%f\r\n", front_ccd.slope_up_max_pos,front_ccd.ccd_slope_max_pos,front_ccd.slope_down_max_pos,car.target_speedl,car.target_speedr);
+//        HAL_UART_Transmit_DMA(&huart3, (uint8_t *)tx_ccd, 27);
+//			}
+			if(exsit_turn_rectangle==1)
 			{
-			      char tx_ccd[27];
-        sprintf(tx_ccd, ":%d,%d,%d,%f,%f\r\n", front_ccd.slope_up_max_pos,front_ccd.ccd_slope_max_pos,front_ccd.slope_down_max_pos,car.target_speedl,car.target_speedr);
-        HAL_UART_Transmit_DMA(&huart3, (uint8_t *)tx_ccd, 27);
+			if(turn_rectngle_flag==1)
+			{
+			car._car_mode=stop_car;				
+				turn_rectangle_cnt++;
+				slow_turn_flag=0;
+			vTaskDelay(50);
+//			car._car_mode=turn_state;
+			turn_rectngle_flag=0;
 			}
+			
+			if(car.car_pos !=straight&&slow_turn_flag==0)
+			{
+			car._car_mode=turn_state;		
+			}
+			
+			
+//		if(car._car_mode==turn_state&&(front_ccd.ccd_slope_max_pos>=90&&front_ccd.ccd_slope_max_pos<=110)&&(turn_rectangle_cnt==1||turn_rectangle_cnt==3))
+//		{
+//			car._car_mode=stop_car;
+//		}
+//		else if(car._car_mode==turn_state&&(front_ccd.ccd_slope_max_pos>=90&&front_ccd.ccd_slope_max_pos<=110)&&(turn_rectangle_cnt==2||turn_rectangle_cnt==4))
+//		{
+//			car._car_mode=stop_car;
+//		}
+//			
+			
+			 if((front_ccd.ccd_slope_max_pos>=90&&front_ccd.ccd_slope_max_pos<=100)&&(turn_rectangle_cnt==1||turn_rectangle_cnt==3))
+			{
+				slow_turn_flag=1;
+			car._car_mode=slow_down;
+			}else if((front_ccd.ccd_slope_max_pos>=90&&front_ccd.ccd_slope_max_pos<=100)&&(turn_rectangle_cnt==0||turn_rectangle_cnt==2)||turn_rectangle_cnt==4)
+			{
+					slow_turn_flag=1;
+			car._car_mode=normal;			
+			}
+			
+			}
+
+			
+			
+			
              SR04_GetData(&SR04_front);
 //			      char vel_pid[21];
 //        sprintf(vel_pid, ":%f,%f\r\n",motorl.current_wheel_speed,motorr.current_wheel_speed);
 //        HAL_UART_Transmit_DMA(&huart3, (uint8_t *)vel_pid, 21);		  
-        vTaskDelay(200);
+        vTaskDelay(100);
     }
 }

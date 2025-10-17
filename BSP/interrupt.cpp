@@ -42,8 +42,12 @@ else if(stop_flag==0&&start_flag==1)
 {
 //motorl.motor_output(pid_calc(&motorl.vel_pid,motorl.current_wheel_speed,motorl.target_wheel_speed));
 //motorr.motor_output(pid_calc(&motorr.vel_pid,motorr.current_wheel_speed,motorr.target_wheel_speed));
+	if(car.update_vel_flag==1)
+	{
 	pwm_l = car.target_speedl*vel_convert;
 	pwm_r = car.target_speedr*vel_convert;
+	}
+
 	motorl.motor_output(pwm_l);
 	motorr.motor_output(pwm_r);
 }

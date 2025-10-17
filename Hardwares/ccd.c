@@ -1,9 +1,11 @@
 #include "ccd.h"
 
 #define two_line_distance 32
+#define white_threshold 180
 	static int ccd_slope_max_pos_last=100;
-static	int ccd_time=0;
-
+volatile int white_cnt=0;
+ int turn_rectngle_flag=0;
+int exsit_turn_rectangle=0; 
 void ccd_dr_irq(CCD_t *ccd);
 void CCD_Init(CCD_t *ccd,
               GPIO_TypeDef *DR_IRQ_Port, uint16_t _DR_IRQ_Pin, GPIO_TypeDef *CCD_SPI_CS_Port,
@@ -95,6 +97,15 @@ void ccd_data_process(CCD_t *ccd)
     // 遍历所有区域找斜率最大点   
     for (int i = 0; i < 200; i++)
     {
+			if(i>0&&i<100)
+			{
+			if(ccd->ccd_Compress_data[i]>white_threshold)
+			{
+			white_cnt++;	
+			}			
+			}
+
+			
         if (i > left_limit && i < right_limit)
         {
              int slope_temp_up = 0;
@@ -124,6 +135,12 @@ void ccd_data_process(CCD_t *ccd)
     }
 		
 		
+					if(white_cnt>80)
+			{
+			exsit_turn_rectangle=1;
+			turn_rectngle_flag=1;
+			}
+			white_cnt=0;
 					if(temp_down_pos_max >= temp_up_pos_max)
 			{
 				int temp_middle_max_pos= (temp_down_pos_max +temp_up_pos_max)/2;
