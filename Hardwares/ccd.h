@@ -1,5 +1,6 @@
 #ifndef __CCD_H
 #define __CCD_H
+
 #ifdef __cplusplus
 extern "C"
 {

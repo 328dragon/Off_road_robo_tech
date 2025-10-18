@@ -5,7 +5,7 @@ extern CCD_t front_ccd;
 extern __IO int start_flag;
 extern __IO int stop_flag;
 extern car_state car;
-extern SR04_t SR04_front;
+
 
 float pwm_l=0;
 float pwm_r=0;
@@ -19,18 +19,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-if(htim->Instance==TIM11)
-{
-  SR04_Elapsed_callback(&SR04_front);
-}
 
 
-if(htim==&htim13)
-{
-//10ms
-motorl.get_motor_speed();
-motorr.get_motor_speed();	
-}
+
+//if(htim==&htim13)
+//{
+////10ms
+//motorl.get_motor_speed();
+//motorr.get_motor_speed();	
+//}
 if(htim==&htim12)
 {
 if(stop_flag==1)
@@ -71,9 +68,5 @@ ccd_spi_rx_cplt_callback(&front_ccd,hspi);
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
-if(htim->Instance==TIM5)
-{
-  SR04_Echo_IC_callback(&SR04_front);
-}
 
 }
