@@ -109,9 +109,16 @@ typedef struct
 }IMU_Parameter;
 
 
+typedef struct {
+    I2C_HandleTypeDef *i2c_handle;  // 该实例使用的I2C句柄
+    uint8_t dev_addr;               // 该实例的设备地址（0xD0或0xD2，取决于AD0引脚）
+	IMU_Parameter _imu_data;
+}MPU6050_Handle_t;
 
-void MPU6050_Init(void);
-void MPU6050_GET_Data(void);
+void MPU6050_Handle_Init(I2C_HandleTypeDef *i2c_handle, 
+    uint8_t dev_addr,              
+MPU6050_Handle_t* mpu6050_handle);
+void MPU6050_Handle_GET_Data(MPU6050_Handle_t* mpu6050_handle);
 
 	#ifdef __cplusplus
 }
@@ -121,49 +128,3 @@ void MPU6050_GET_Data(void);
 
 
 
-//#ifndef __MPU6050_H
-//#define __MPU6050_H
-
-//#include "stm32f4xx.h"
-
-//#ifdef __cplusplus
-//extern "C"
-//{
-//#endif
-//    // 开始
-//#define MPU6050_ADDR 0xD0
-//#define PWR_MGMT_1 0x6B
-//#define SMPLRT_DIV 0x19
-//#define CONFIG 0x1A
-//#define GYRO_CONFIG 0x1B
-//#define ACCEL_CONFIG 0x1C
-//#define INT_ENABLE 0x38
-//#define ACCEL_XOUT_H 0x3B
-//#define GYRO_XOUT_H 0x43
-
-//	
-//	typedef struct IMU_Para
-//	{
-//	float Accel_X;
-//	float Accel_Y;	
-//	float Accel_Z;
-//		float Gyro_X;
-//	float Gyro_Y;
-//float Gyro_Z;		
-//	double KalmanAngleX;
-//	double KalmanAngleY;	
-//	}IMU_Parameter;
-//	
-//	
-//void MPU6050_Init(I2C_HandleTypeDef *hi2c);
-//void MPU6050_ReadAccel(I2C_HandleTypeDef *hi2c, float *ax, float *ay, float *az);
-//void MPU6050_ReadGyro(I2C_HandleTypeDef *hi2c, float *gx, float *gy, float *gz);
-
-//	
-//	
-//	
-//	#ifdef __cplusplus
-//}
-//#endif
-
-//#endif

@@ -30,7 +30,7 @@ typedef struct {
 
 
 
-void MPU6050_Read_All(IMU_Parameter *IMU_Data);
+void Kalman_MPU6050_Filter(MPU6050_Handle_t *mpu6050_handle);
 double Kalman_getAngle(Kalman_t *Kalman, double newAngle, double newRate, double dt);
 
 	#ifdef __cplusplus
