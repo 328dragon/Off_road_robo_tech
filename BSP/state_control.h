@@ -9,7 +9,7 @@ extern "C"
 
 typedef struct  _
 {
-int state_Order;
+__IO int state_Order;
 double  cin;
 double cout;
 uint8_t *data;

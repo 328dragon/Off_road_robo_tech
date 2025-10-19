@@ -23,10 +23,14 @@ int imu_priority=0;
 int finish_one_loop=0;
 //感为
 GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor;
+GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor_right;
 // ccd数据
 CCD_t front_ccd;
 //陀螺仪
 extern MPU6050_Handle_t mpu6050_dragon;
+__IO	int first_read=0;
+double pitch_zero=1.0;
+	double pitch_true=0;
 USARTInstance uart2 = {0};
 void usart2_callback(void)
 {
@@ -56,7 +60,7 @@ void mpu6050_state_ctrl(state_ctrl_t *_ctr_t, double *cin)
     {
     case 0:
     {
-        if (*cin < -8.0)
+        if (*cin < -7.0)
         {
             imu_priority=1;
             _ctr_t->state_Order = 1;
@@ -65,7 +69,7 @@ void mpu6050_state_ctrl(state_ctrl_t *_ctr_t, double *cin)
     }
     case 1:
     {
-         if (*cin < 10.0 && *cin > -8.0)
+         if (*cin < 7.0 && *cin > -7.0)
         {
             _ctr_t->state_Order = 2;
         }
@@ -73,12 +77,13 @@ void mpu6050_state_ctrl(state_ctrl_t *_ctr_t, double *cin)
     }
     case 2:
     {
-         if (*cin > 10.0)      
+         if (*cin > 7.0)      
         {
-        _ctr_t->state_Order = 0;
-          vTaskDelay(5000);
+
+          vTaskDelay(3000);
           imu_priority=0;
-					 _ctr_t->state_Order = -1;
+					_ctr_t->state_Order = -1;
+					gray_state_Ctr.state_Order=0;
         }
         break;
     }
@@ -96,7 +101,9 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, double *cin)
         // 状态0加速
     case 0:
     {
-        if (_ctr_t->data[1] == 0 && _ctr_t->data[2] == 0 && _ctr_t->data[3] == 0 && _ctr_t->data[4] == 0 && _ctr_t->data[5] == 0 && _ctr_t->data[6] == 0)
+        if (_ctr_t->data[1] == 0 && _ctr_t->data[2] == 0 && _ctr_t->data[3] == 0 && _ctr_t->data[4] == 0 && _ctr_t->data[5] == 0 && _ctr_t->data[6] == 0&&
+					Gw_GrayscaleSensor_right.data[0]==1&&Gw_GrayscaleSensor_right.data[1]==1&&Gw_GrayscaleSensor_right.data[2]==1&&Gw_GrayscaleSensor_right.data[3]==1&&Gw_GrayscaleSensor_right.data[4]==1&&Gw_GrayscaleSensor_right.data[5]==1&&
+				Gw_GrayscaleSensor_right.data[6]==1&&Gw_GrayscaleSensor_right.data[7]==1)
             _ctr_t->state_Order = 1;
         break;
     }
@@ -175,8 +182,10 @@ void main_rtos(void)
     // mpu6050
 
     MPU6050_Handle_Init(&hi2c2, 0xD0, &mpu6050_dragon);
+//HAL_Delay(2000);
     // 灰度
     Gw_GrayscaleSensor = GW_grasycalse::Gw_Grayscale_t(&hi2c1, GW_GRAY_ADDR_DEF);
+		Gw_GrayscaleSensor_right=GW_grasycalse::Gw_Grayscale_t(&hi2c1, GW_GRAY_ADDR_DEF_right);
     motorl.motor_init();
     motorr.motor_init();
     car.car_init();
@@ -209,7 +218,12 @@ void mpu6050_read_task(void *pvparameters)
 
         MPU6050_Handle_GET_Data(&mpu6050_dragon);
         Kalman_MPU6050_Filter(&mpu6050_dragon);
-        imu_state_Ctr.state_func(&imu_state_Ctr, &mpu6050_dragon._imu_data.KalmanAngleY);
+			if(first_read<=20)
+			{
+			first_read++;
+			}
+
+     
 
         vTaskDelay(100);
     }
@@ -219,13 +233,14 @@ void gray_read_task(void *pvParameters)
 {
     gray_state_Ctr.data = Gw_GrayscaleSensor.data;
 
-    while (Gw_GrayscaleSensor.gw_ping())
+    while (Gw_GrayscaleSensor.gw_ping()||Gw_GrayscaleSensor_right.gw_ping())
     {
         vTaskDelay(100);
     }
     while (1)
     {
         Gw_GrayscaleSensor.read_data();
+			Gw_GrayscaleSensor_right.read_data();
         gray_state_Ctr.state_func(&gray_state_Ctr, NULL);
         vTaskDelay(20);
     }
@@ -242,6 +257,13 @@ void state_update(void *pvparameters)
             car.update_vel_flag = 1;
             speed_normal = 1.3;
 
+            car.vel_Control();
+            break;
+        }
+				case speed_up:
+        {
+            car.update_vel_flag = 1;
+            speed_normal = 1.6;
             car.vel_Control();
             break;
         }
@@ -278,7 +300,8 @@ void state_update(void *pvparameters)
             break;
         }
 
-        vTaskDelay(10);
+
+				vTaskDelay(10);
     }
 }
 
@@ -288,6 +311,12 @@ void data_processing(void *pvparameters)
     {
         ccd_data_process(&front_ccd);
         car.pos_update(front_ccd.ccd_slope_max_pos);
+					if(first_read>=20) 
+{
+	pitch_true=mpu6050_dragon._imu_data.KalmanAngleY-pitch_zero;
+ imu_state_Ctr.state_func(&imu_state_Ctr, &pitch_true);
+}	
+
 //					if()
 //					{
 //					
@@ -309,7 +338,13 @@ void pattern_switch(void *pvparameters)
             if(imu_state_Ctr.state_Order==0)
             {               
             car._car_mode = normal;
-            }else if(imu_state_Ctr.state_Order==1||imu_state_Ctr.state_Order==2)
+            }
+						else if(imu_state_Ctr.state_Order==1)
+						{
+						 car._car_mode = speed_up;
+						
+						}
+						else if(imu_state_Ctr.state_Order==2)
             {
             car._car_mode = slow_down;
             }
@@ -345,7 +380,7 @@ void pattern_switch(void *pvparameters)
         //最后停下逻辑
         if(finish_one_loop==1)
         {
-car._car_mode=stop_car;
+				car._car_mode=stop_car;
 
         }
 
