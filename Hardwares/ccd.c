@@ -1,7 +1,7 @@
 #include "ccd.h"
 
 #define two_line_distance 32
-#define white_threshold 180
+#define black_threshold 90
 	static int ccd_slope_max_pos_last=100;
 volatile int white_cnt=0;
  int turn_rectngle_flag=0;
@@ -97,9 +97,9 @@ void ccd_data_process(CCD_t *ccd)
     // 遍历所有区域找斜率最大点   
     for (int i = 0; i < 200; i++)
     {
-			if(i>0&&i<100)
+			if(i>0&&i<200)
 			{
-			if(ccd->ccd_Compress_data[i]>white_threshold)
+			if(ccd->ccd_Compress_data[i]<black_threshold)
 			{
 			white_cnt++;	
 			}			
@@ -135,10 +135,14 @@ void ccd_data_process(CCD_t *ccd)
     }
 		
 		
-					if(white_cnt>80)
+					if(white_cnt>150)
 			{
 			exsit_turn_rectangle=1;
 			turn_rectngle_flag=1;
+			}
+			else 
+			{
+				turn_rectngle_flag=0;
 			}
 			white_cnt=0;
 					if(temp_down_pos_max >= temp_up_pos_max)

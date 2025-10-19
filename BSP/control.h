@@ -21,6 +21,7 @@ slow_down=1,
 turn_state=2,
 speed_up=3,
 	stop_car=4,
+	turn_state_second=5
 }car_run_mode;
 
 

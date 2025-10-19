@@ -14,11 +14,18 @@ __IO int stop_flag = 0;
 extern float speed_normal;
 extern float pwm_l;
 extern float pwm_r;
+ extern int turn_rectngle_flag;
 int up_slope_priority = 0;
 void mpu6050_state_ctrl(state_ctrl_t *_ctr_t, double *cin);
 void gw_state_Ctrl(state_ctrl_t *_ctr_t, double *cin);
 state_ctrl_t imu_state_Ctr = {0, 0, 0, NULL, mpu6050_state_ctrl};
 state_ctrl_t gray_state_Ctr = {0, 0, 0, NULL, gw_state_Ctrl};
+//感为
+GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor;
+// ccd数据
+CCD_t front_ccd;
+//陀螺仪
+extern MPU6050_Handle_t mpu6050_dragon;
 USARTInstance uart2 = {0};
 void usart2_callback(void)
 {
@@ -92,7 +99,7 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, double *cin)
     // 静止
     case 1:
     {
-        vTaskDelay(1000);
+        vTaskDelay(300);
         _ctr_t->state_Order = 2;
 
         break;
@@ -100,12 +107,8 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, double *cin)
     // 状态2旋转
     case 2:
     {
-        int data_all;
-        for (int i = 1; i <= 8; i++)
-        {
-            data_all += _ctr_t->data[i];
-        }
-        if (data_all > 6)
+
+      if ((Gw_GrayscaleSensor.data[3]==1&&Gw_GrayscaleSensor.data[4]==1&&Gw_GrayscaleSensor.data[5]==1) &&  (Gw_GrayscaleSensor.data[6]==0&&Gw_GrayscaleSensor.data[7]==0))
         {
             _ctr_t->state_Order = 3;
         }
@@ -121,38 +124,34 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, double *cin)
         // 停下等待1s
     case 4:
     {
-        vTaskDelay(1000);
+        vTaskDelay(300);
         _ctr_t->state_Order = 5;
         break;
     }
     // 旋转
     case 5:
     {
-        int data_all = 0;
-        for (int i = 1; i <= 8; i++)
+               if ((Gw_GrayscaleSensor.data[3]==1&&Gw_GrayscaleSensor.data[4]==1&&Gw_GrayscaleSensor.data[5]==1) &&  (Gw_GrayscaleSensor.data[6]==0&&Gw_GrayscaleSensor.data[7]==0))
         {
-            data_all += _ctr_t->data[i];
-        }
-        if (data_all > 6)
-        {
-            _ctr_t->state_Order = 0; // 走过两个直角，可以加速了
+            _ctr_t->state_Order = 0;
         }
         break;
     }
+
+		
     default:
         break;
     }
 }
 
 #define abs(x) (((x) > 0) ? (x) : (-(x)))
-// ccd数据
-CCD_t front_ccd;
+
 using namespace Motor;
 Motor::dc_motor motorl(htim8, TIM_CHANNEL_4, PH1_GPIO_Port, PH1_Pin, 1);
 Motor::dc_motor motorr(htim8, TIM_CHANNEL_3, PH2_GPIO_Port, PH2_Pin, 0);
 car_state car;
-GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor;
-extern MPU6050_Handle_t mpu6050_dragon;
+
+
 TaskHandle_t main_rtos_handle;       // 主函数
 TaskHandle_t state_update_handle;    // 状态更新
 TaskHandle_t data_processing_handle; // 数据获取及处理
@@ -256,6 +255,13 @@ void state_update(void *pvparameters)
             pwm_r = 12;
             break;
         }
+				case turn_state_second:
+				{
+				car.update_vel_flag = 0;
+            pwm_l = -8;
+            pwm_r = 14;
+            break;
+				}
         case stop_car:
         {
             car.update_vel_flag = 0;
@@ -289,11 +295,8 @@ void pattern_switch(void *pvparameters)
 
     while (1)
     {
-     
-            if (imu_state_Ctr.state_Order == 0)
-            {
-                if(gray_state_Ctr.state_Order==0)
-                car._car_mode = speed_up;
+                    if(gray_state_Ctr.state_Order==0)
+                car._car_mode = normal;
                 else if (gray_state_Ctr.state_Order==1)
                 {
                    car._car_mode=stop_car;  
@@ -304,26 +307,50 @@ void pattern_switch(void *pvparameters)
                 }
                 else if (gray_state_Ctr.state_Order==3)
                 {
-                  car._car_mode =slow_down;  
+                  car._car_mode =normal;  
                 }
                  else if (gray_state_Ctr.state_Order==4)
                 {
                    car._car_mode=stop_car;  
                 }
-                     else if (gray_state_Ctr.state_Order==5)
+                     else if (gray_state_Ctr.state_Order==5||gray_state_Ctr.state_Order==6)
                 {
                   car._car_mode =turn_state;   
                 }
-                
-            }
-            if (imu_state_Ctr.state_Order == 1)
-            {
-                car._car_mode = speed_up;
-            }
-            if (imu_state_Ctr.state_Order == 2)
-            {
-                car._car_mode = slow_down;
-            }
+//            if (imu_state_Ctr.state_Order == 0)
+//            {
+//                if(gray_state_Ctr.state_Order==0)
+//                car._car_mode = speed_up;
+//                else if (gray_state_Ctr.state_Order==1)
+//                {
+//                   car._car_mode=stop_car;  
+//                }
+//                else if (gray_state_Ctr.state_Order==2)
+//                {
+//                  car._car_mode =turn_state;   
+//                }
+//                else if (gray_state_Ctr.state_Order==3)
+//                {
+//                  car._car_mode =slow_down;  
+//                }
+//                 else if (gray_state_Ctr.state_Order==4)
+//                {
+//                   car._car_mode=stop_car;  
+//                }
+//                     else if (gray_state_Ctr.state_Order==5)
+//                {
+//                  car._car_mode =turn_state;   
+//                }
+//                
+//            }
+//            if (imu_state_Ctr.state_Order == 1)
+//            {
+//                car._car_mode = speed_up;
+//            }
+//            if (imu_state_Ctr.state_Order == 2)
+//            {
+//                car._car_mode = slow_down;
+//            }
 
         vTaskDelay(10);
     }
