@@ -1,6 +1,10 @@
 {
     "files.associations": {
         "bsp_delay.h": "c",
-        "ccd.h": "c"
+        "ccd.h": "c",
+        "state_control.h": "c",
+        "cstdint": "c",
+        "bsp_usart.h": "c",
+        "bsp_can.h": "c"
     }
 }

@@ -47,6 +47,7 @@
 "robot\bsp_usart.o"
 "robot\bsp_delay.o"
 "robot\kalman.o"
+"robot\state_control.o"
 "robot\motor.o"
 "robot\ccd.o"
 "robot\sr04.o"

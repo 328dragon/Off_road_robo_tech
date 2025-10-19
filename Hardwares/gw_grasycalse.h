@@ -95,7 +95,7 @@ public:
         }
     }
 
-protected:
+public:
     float control;
     uint8_t data[8];//有八个光电管，左0右8
 	I2C_HandleTypeDef * I2C_handle;

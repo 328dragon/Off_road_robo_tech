@@ -10,8 +10,8 @@
 
 #define RAD_TO_DEG 57.295779513082320876798154814105
 
-//extern IMU_Parameter IMU_Data;
-//extern MPU6050_Handle_t mpu6050_dragon;
+// extern IMU_Parameter IMU_Data;
+// extern MPU6050_Handle_t mpu6050_dragon;
 
 uint32_t timer;
 
@@ -28,7 +28,7 @@ Kalman_t KalmanY = {
 
 void Kalman_MPU6050_Filter(MPU6050_Handle_t *mpu6050_handle)
 {
-	IMU_Parameter *IMU_Data=&mpu6050_handle->_imu_data;
+    IMU_Parameter *IMU_Data = &mpu6050_handle->_imu_data;
     double dt = (double)(HAL_GetTick() - timer) / 1000;
     timer = HAL_GetTick();
     double roll;
@@ -84,4 +84,3 @@ double Kalman_getAngle(Kalman_t *Kalman, double newAngle, double newRate, double
 
     return Kalman->angle;
 };
-
