@@ -2,10 +2,11 @@
 
 #define two_line_distance 32
 #define black_threshold 90
-	static int ccd_slope_max_pos_last=100;
-volatile int white_cnt=0;
- int turn_rectngle_flag=0;
-int exsit_turn_rectangle=0; 
+static int ccd_slope_max_pos_last = 100;
+volatile int right_black_cnt = 0;
+volatile int all_black_cnt = 0;
+int turn_rectngle_flag = 0;
+int all_black_finish = 0;
 void ccd_dr_irq(CCD_t *ccd);
 void CCD_Init(CCD_t *ccd,
               GPIO_TypeDef *DR_IRQ_Port, uint16_t _DR_IRQ_Pin, GPIO_TypeDef *CCD_SPI_CS_Port,
@@ -74,11 +75,11 @@ void ccd_spi_rx_cplt_callback(CCD_t *ccd, SPI_HandleTypeDef *hspi)
 }
 // 处理函数
 void ccd_data_process(CCD_t *ccd)
-{  
-	int slope_temp_up_max=0;
-	int slope_temp_down_max = 0;
-    uint16_t temp_up_pos_max=0;
-	uint16_t temp_down_pos_max=0;
+{
+    int slope_temp_up_max = 0;
+    int slope_temp_down_max = 0;
+    uint16_t temp_up_pos_max = 0;
+    uint16_t temp_down_pos_max = 0;
 
     // 压缩数据，10个平均一下
     if (ccd->ccd_state == CCD_OK)
@@ -94,68 +95,83 @@ void ccd_data_process(CCD_t *ccd)
         ccd->ccd_state = CCD_WAIT;
     }
 
-    // 遍历所有区域找斜率最大点   
+    // 遍历所有区域找斜率最大点
     for (int i = 0; i < 200; i++)
     {
-			if(i>0&&i<200)
-			{
-			if(ccd->ccd_Compress_data[i]<black_threshold)
-			{
-			white_cnt++;	
-			}			
-			}
+        if (i > 100 && i < 180)
+        {
+            if (ccd->ccd_Compress_data[i] < black_threshold)
+            {
+                right_black_cnt++;
+            }
+        }
 
-			
+        if (i > 20 && i < 180)
+        {
+            if (ccd->ccd_Compress_data[i] < black_threshold)
+            {
+                all_black_cnt++;
+            }
+        }
+
         if (i > left_limit && i < right_limit)
         {
-             int slope_temp_up = 0;
-						int slope_temp_down = 0;
+            int slope_temp_up = 0;
+            int slope_temp_down = 0;
             if (ccd->ccd_Compress_data[i + 1] >= ccd->ccd_Compress_data[i])
             {
                 slope_temp_up = ccd->ccd_Compress_data[i + 1] - ccd->ccd_Compress_data[i];
             }
-            
+
             if (ccd->ccd_Compress_data[i + 1] < ccd->ccd_Compress_data[i])
             {
                 slope_temp_down = ccd->ccd_Compress_data[i] - ccd->ccd_Compress_data[i + 1];
-            }		
-						
-            if (slope_temp_up >slope_temp_up_max)
-            {		
-						slope_temp_up_max= slope_temp_up;
-						temp_up_pos_max = i;
+            }
+
+            if (slope_temp_up > slope_temp_up_max)
+            {
+                slope_temp_up_max = slope_temp_up;
+                temp_up_pos_max = i;
             }
             if (slope_temp_down > slope_temp_down_max)
             {
-						slope_temp_down_max = slope_temp_down;
-						temp_down_pos_max = i;
+                slope_temp_down_max = slope_temp_down;
+                temp_down_pos_max = i;
             }
-
         }
     }
-		
-		
-					if(white_cnt>150)
-			{
-			exsit_turn_rectangle=1;
-			turn_rectngle_flag=1;
-			}
-			else 
-			{
-				turn_rectngle_flag=0;
-			}
-			white_cnt=0;
-					if(temp_down_pos_max >= temp_up_pos_max)
-			{
-				int temp_middle_max_pos= (temp_down_pos_max +temp_up_pos_max)/2;
-				//第一次不用判断是否离中心过远
-	 if(((temp_middle_max_pos-ccd_slope_max_pos_last)<=two_line_distance)||((temp_middle_max_pos-ccd_slope_max_pos_last)>=-two_line_distance))
-				{
-				ccd->slope_up_max_pos = temp_up_pos_max;
-				ccd->slope_down_max_pos = temp_down_pos_max;
-				}
-			}
-			
-ccd->ccd_slope_max_pos= (ccd->slope_down_max_pos +ccd->slope_up_max_pos)/2;
-ccd_slope_max_pos_last=ccd->ccd_slope_max_pos;
+
+    if (right_black_cnt > 60)
+    {
+        turn_rectngle_flag = 1;
+    }
+    else
+    {
+        turn_rectngle_flag = 0;
+    }
+
+    if (all_black_cnt > 120)
+    {
+        all_black_finish = 1;
+    }
+    else
+    {
+     all_black_finish=0;   
+    }
+
+    all_black_cnt = 0;
+    right_black_cnt = 0;
+    if (temp_down_pos_max >= temp_up_pos_max)
+    {
+        int temp_middle_max_pos = (temp_down_pos_max + temp_up_pos_max) / 2;
+        // 第一次不用判断是否离中心过远
+        if (((temp_middle_max_pos - ccd_slope_max_pos_last) <= two_line_distance) || ((temp_middle_max_pos - ccd_slope_max_pos_last) >= -two_line_distance))
+        {
+            ccd->slope_up_max_pos = temp_up_pos_max;
+            ccd->slope_down_max_pos = temp_down_pos_max;
+        }
+    }
+
+    ccd->ccd_slope_max_pos = (ccd->slope_down_max_pos + ccd->slope_up_max_pos) / 2;
+    ccd_slope_max_pos_last = ccd->ccd_slope_max_pos;
 }
