@@ -18,7 +18,7 @@ void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin);
 void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin);
 state_ctrl_t imu_state_Ctr = {0, 0, 0, NULL, H30_state_ctrl};
 state_ctrl_t gray_state_Ctr = {0, 0, 0, NULL, gw_state_Ctrl};
-int imu_priority=0;
+int imu_priority=1;
 int finish_one_loop=0;
 //感为
 GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor;
@@ -43,6 +43,7 @@ static float h30_yaw=0;
 float yaw_zero=0;
 float yaw_true=0;
 
+int turn_once_press=0;
 USARTInstance uart2 = {0};
 USARTInstance uart3 = {0};
 void usart2_callback(void)
@@ -99,13 +100,14 @@ USART_Init_Config_s uart3_cfg = {
     .usart_handle = &huart3,
     .module_callback = usart3_callback,
 };
+
 void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
 {
     switch (_ctr_t->state_Order)
     {
     case 0:
     {
-        if (*cin < -7.0)
+        if (*cin < -10.0)
         {
             imu_priority=1;
             _ctr_t->state_Order = 1;
@@ -114,7 +116,7 @@ void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
     }
     case 1:
     {
-         if (*cin < 7.0 && *cin > -7.0)
+         if (*cin < 8.0 && *cin > -10.0)
         {
             _ctr_t->state_Order = 2;
         }
@@ -122,16 +124,24 @@ void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
     }
     case 2:
     {
-         if (*cin > 7.0)      
+         if (*cin > 8.0)      
         {
 
-          vTaskDelay(3000);
+          vTaskDelay(5000);
           imu_priority=0;
 					_ctr_t->state_Order = -1;
 					gray_state_Ctr.state_Order=0;
         }
         break;
     }
+//		case 3:
+//		{
+//		        if (*cin < 8.0 && *cin > -10.0)
+//        {
+//            _ctr_t->state_Order = 2;
+//        }
+//        break;
+//		}
 
     default:
         break;
@@ -146,17 +156,25 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
         // 状态0加速
     case 0:
     {
-        if (_ctr_t->data[1] == 0 && _ctr_t->data[2] == 0 && _ctr_t->data[3] == 0 && _ctr_t->data[4] == 0 && _ctr_t->data[5] == 0 && _ctr_t->data[6] == 0&&
+			int white_Cnt=0;
+			for(int i=0;i<7;i++)
+			{
+			if(_ctr_t->data[i]==0)
+				white_Cnt++;		
+			}
+        if (white_Cnt>=5&&
 					Gw_GrayscaleSensor_right.data[0]==1&&Gw_GrayscaleSensor_right.data[1]==1&&Gw_GrayscaleSensor_right.data[2]==1&&Gw_GrayscaleSensor_right.data[3]==1&&Gw_GrayscaleSensor_right.data[4]==1&&Gw_GrayscaleSensor_right.data[5]==1&&
 				Gw_GrayscaleSensor_right.data[6]==1&&Gw_GrayscaleSensor_right.data[7]==1)
             _ctr_t->state_Order = 1;
         break;
     }
+		
     // 静止
     case 1:
     {
         vTaskDelay(300);
         _ctr_t->state_Order = 2;
+			turn_once_press++;
 
         break;
     }
@@ -225,7 +243,7 @@ void H30_state_task(void *pvparameters);
 
     USARTRegister(&uart2, &uart2_cfg);
     memset(uart2.recv_buff, 0, uart2.recv_buff_size);
-		HAL_Delay(2000);
+		HAL_Delay(1000);
 USARTRegister(&uart3, &uart3_cfg);
     memset(uart3.recv_buff, 0, uart3.recv_buff_size);
 
@@ -304,6 +322,7 @@ void state_update(void *pvparameters)
         }
 				case speed_up:
         {
+					
             car.update_vel_flag = 1;
             speed_normal = 1.6;
             car.vel_Control();
@@ -312,10 +331,18 @@ void state_update(void *pvparameters)
         case slow_down:
         {
             car.update_vel_flag = 1;
-            speed_normal = 0.9;
+            speed_normal = 0.8;
             car.vel_Control();
             break;
         }
+				  case slow_down_stone:
+        {
+            car.update_vel_flag = 0;
+              pwm_l = 8;
+            pwm_r = 8;
+            break;
+        }
+				
         case turn_state:
         {
             car.update_vel_flag = 0;
@@ -368,7 +395,7 @@ void pattern_switch(void *pvparameters)
         {
             if(imu_state_Ctr.state_Order==0)
             {               
-            car._car_mode = normal;
+            car._car_mode = slow_down;
             }
 						else if(imu_state_Ctr.state_Order==1)
 						{
@@ -382,7 +409,14 @@ void pattern_switch(void *pvparameters)
 
         }else if (imu_priority==0)
         {
-                if(gray_state_Ctr.state_Order==0)
+//                if(gray_state_Ctr.state_Order==0&&turn_once_press==0)
+//                car._car_mode = normal;
+//								else if(gray_state_Ctr.state_Order==0&&turn_once_press!=0)
+//								{
+//								car._car_mode = normal;
+//								}
+					
+					 if(gray_state_Ctr.state_Order==0)
                 car._car_mode = normal;
                 else if (gray_state_Ctr.state_Order==1)
                 {
