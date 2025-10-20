@@ -5,19 +5,18 @@
 #include "ccd.h"
 #include "control.h"
 #include "bsp_usart.h"
-#include "mpu6050.h"
-#include "kalman.h"
 #include "gw_grasycalse.h"
 #include "state_control.h"
+#include "H30_analysis_data.h"
 __IO int start_flag = 0;
 __IO int stop_flag = 0;
 extern float speed_normal;
 extern float pwm_l;
 extern float pwm_r;
  extern int turn_rectngle_flag;
-void mpu6050_state_ctrl(state_ctrl_t *_ctr_t, double *cin);
-void gw_state_Ctrl(state_ctrl_t *_ctr_t, double *cin);
-state_ctrl_t imu_state_Ctr = {0, 0, 0, NULL, mpu6050_state_ctrl};
+void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin);
+void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin);
+state_ctrl_t imu_state_Ctr = {0, 0, 0, NULL, H30_state_ctrl};
 state_ctrl_t gray_state_Ctr = {0, 0, 0, NULL, gw_state_Ctrl};
 int imu_priority=0;
 int finish_one_loop=0;
@@ -26,12 +25,26 @@ GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor;
 GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor_right;
 // ccd数据
 CCD_t front_ccd;
-//陀螺仪
-extern MPU6050_Handle_t mpu6050_dragon;
+//********陀螺仪********////////
 __IO	int first_read=0;
-double pitch_zero=1.0;
-	double pitch_true=0;
+
+ int32_t pitch_all_int=0;
+static float h30_pitch=0;
+float pitch_zero=0;
+float pitch_true=0;
+
+ int32_t roll_all_int=0;
+static float h30_roll=0;
+float roll_zero=0;
+float roll_true=0;
+
+ int32_t yaw_all_int=0;
+static float h30_yaw=0;
+float yaw_zero=0;
+float yaw_true=0;
+
 USARTInstance uart2 = {0};
+USARTInstance uart3 = {0};
 void usart2_callback(void)
 {
     // 帧头帧尾校验
@@ -49,12 +62,44 @@ void usart2_callback(void)
     }
 }
 
+void usart3_callback(void)
+{
+if(uart3.recv_buff[0]==0x59&&uart3.recv_buff[1]==0x53&&uart3.recv_buff[33]==0x40&&uart3.recv_buff[34]==0x0C)
+{
+//pitch_all_int=uart3.recv_buff[46]<<24+uart3.recv_buff[45]<<16+uart3.recv_buff[44]<<8+uart3.recv_buff[43];
+	pitch_all_int=(int)((uart3.recv_buff[38] << 24) | (uart3.recv_buff[37] << 16) | (uart3.recv_buff[36] << 8) |uart3.recv_buff[35]);
+	roll_all_int=(int)((uart3.recv_buff[42] << 24) | (uart3.recv_buff[41] << 16) | (uart3.recv_buff[40] << 8) |uart3.recv_buff[39]);
+		yaw_all_int=(int)((uart3.recv_buff[46] << 24) | (uart3.recv_buff[45] << 16) | (uart3.recv_buff[44] << 8) |uart3.recv_buff[43]);
+	h30_pitch=(pitch_all_int*0.000001f);
+	h30_roll=	(roll_all_int*0.000001f);
+		h30_yaw=(yaw_all_int*0.000001f);
+	if(first_read<20)
+	{
+	pitch_zero=h30_pitch;
+	roll_zero=h30_roll;
+				yaw_zero=h30_yaw;
+		first_read++;
+	}else 
+	{
+	pitch_true=h30_pitch-pitch_zero;
+		roll_true=h30_roll-roll_zero;	
+		yaw_true=h30_yaw-yaw_zero;
+	}
+}
+	
+}
+
 USART_Init_Config_s uart2_cfg = {
     .recv_buff_size = 10,
     .usart_handle = &huart2,
     .module_callback = usart2_callback,
 };
-void mpu6050_state_ctrl(state_ctrl_t *_ctr_t, double *cin)
+USART_Init_Config_s uart3_cfg = {
+    .recv_buff_size = 100,
+    .usart_handle = &huart3,
+    .module_callback = usart3_callback,
+};
+void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
 {
     switch (_ctr_t->state_Order)
     {
@@ -94,7 +139,7 @@ void mpu6050_state_ctrl(state_ctrl_t *_ctr_t, double *cin)
 }
 
 // 内圈感为状态机
-void gw_state_Ctrl(state_ctrl_t *_ctr_t, double *cin)
+void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
 {
     switch (_ctr_t->state_Order)
     {
@@ -168,21 +213,24 @@ TaskHandle_t state_update_handle;    // 状态更新
 TaskHandle_t data_processing_handle; // 数据获取及处理
 TaskHandle_t pattern_switch_handle;  // 模式切换
 TaskHandle_t gray_read_handle;       // 灰度传感器
-TaskHandle_t mpu6050_read_handle;    // 陀螺仪结算
+TaskHandle_t H30_state_handle;    // 陀螺仪结算
 void gray_read_task(void *pvParameters);
 void state_update(void *pvparameters);
 void data_processing(void *pvparameters);
 void pattern_switch(void *pvparameters);
-void mpu6050_read_task(void *pvparameters);
+void H30_state_task(void *pvparameters);
 
-void main_rtos(void)
+ void main_rtos(void)
 {
+
     USARTRegister(&uart2, &uart2_cfg);
     memset(uart2.recv_buff, 0, uart2.recv_buff_size);
-    // mpu6050
+		HAL_Delay(2000);
+USARTRegister(&uart3, &uart3_cfg);
+    memset(uart3.recv_buff, 0, uart3.recv_buff_size);
 
-    MPU6050_Handle_Init(&hi2c2, 0xD0, &mpu6050_dragon);
-//HAL_Delay(2000);
+
+
     // 灰度
     Gw_GrayscaleSensor = GW_grasycalse::Gw_Grayscale_t(&hi2c1, GW_GRAY_ADDR_DEF);
 		Gw_GrayscaleSensor_right=GW_grasycalse::Gw_Grayscale_t(&hi2c1, GW_GRAY_ADDR_DEF_right);
@@ -197,7 +245,7 @@ void main_rtos(void)
                                    &data_processing_handle);
     BaseType_t task3 = xTaskCreate(pattern_switch, "pattern_switch", 200, NULL, 4,
                                    &pattern_switch_handle);
-    BaseType_t ok4 = xTaskCreate(mpu6050_read_task, "mpu6050_read_task", 300, NULL, 2, &mpu6050_read_handle);
+    BaseType_t ok4 = xTaskCreate(H30_state_task, "mpu6050_read_task", 300, NULL, 2, &H30_state_handle);
     BaseType_t ok5 = xTaskCreate(gray_read_task, "gray_read_task", 300, NULL, 2, &gray_read_handle);
 
     if (task1 != pdPASS || task2 != pdPASS || task3 != pdPASS)
@@ -210,22 +258,16 @@ void main_rtos(void)
         }
     }
 }
-void mpu6050_read_task(void *pvparameters)
+void H30_state_task(void *pvparameters)
 {
 
     while (1)
     {
-
-        MPU6050_Handle_GET_Data(&mpu6050_dragon);
-        Kalman_MPU6050_Filter(&mpu6050_dragon);
-			if(first_read<=20)
-			{
-			first_read++;
-			}
-
-     
-
-        vTaskDelay(100);
+//			char tx_h30[12];
+//			sprintf(tx_h30,":%f\r\n",pitch_true);
+//HAL_UART_Transmit(&huart3,(uint8_t*)tx_h30,12,20);
+    H30_state_ctrl(&imu_state_Ctr,&pitch_true);
+        vTaskDelay(10);
     }
 }
 
@@ -311,17 +353,6 @@ void data_processing(void *pvparameters)
     {
         ccd_data_process(&front_ccd);
         car.pos_update(front_ccd.ccd_slope_max_pos);
-					if(first_read>=20) 
-{
-	pitch_true=mpu6050_dragon._imu_data.KalmanAngleY-pitch_zero;
- imu_state_Ctr.state_func(&imu_state_Ctr, &pitch_true);
-}	
-
-//					if()
-//					{
-//					
-//					finish_one_loop=1;
-//					}
         // 任务延迟
         vTaskDelay(10);
     }

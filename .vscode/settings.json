@@ -4,6 +4,7 @@
         "ccd.h": "c",
         "spi.h": "c",
         "compare": "c",
-        "pid.h": "c"
+        "pid.h": "c",
+        "stddef.h": "c"
     }
 }

@@ -28,7 +28,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "main_rtos.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -107,8 +107,8 @@ int main(void)
   MX_TIM5_Init();
   MX_TIM11_Init();
   MX_I2C1_Init();
-  MX_I2C2_Init();
   MX_USART2_UART_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 //HAL_Delay(2000);
   main_rtos();

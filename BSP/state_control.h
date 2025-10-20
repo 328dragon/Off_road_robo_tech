@@ -13,7 +13,7 @@ __IO int state_Order;
 double  cin;
 double cout;
 uint8_t *data;
- void (*state_func)(struct _ *,  double *cin);
+ void (*state_func)(struct _ *,  float *cin);
 
 }state_ctrl_t;
 

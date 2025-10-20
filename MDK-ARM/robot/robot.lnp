@@ -1,4 +1,4 @@
---cpu=Cortex-M4.fp.sp
+--cpu=Cortex-M4.fp.sp --lto
 "robot\startup_stm32f405xx.o"
 "robot\main.o"
 "robot\gpio.o"
@@ -46,13 +46,12 @@
 "robot\pid.o"
 "robot\bsp_usart.o"
 "robot\bsp_delay.o"
-"robot\kalman.o"
 "robot\state_control.o"
 "robot\motor.o"
 "robot\ccd.o"
 "robot\sr04.o"
 "robot\gw_grasycalse.o"
-"robot\mpu6050.o"
+"robot\h30_analysis_data.o"
 --strict --scatter "robot\robot.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers
