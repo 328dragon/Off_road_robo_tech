@@ -5,6 +5,7 @@
         "spi.h": "c",
         "compare": "c",
         "pid.h": "c",
-        "stddef.h": "c"
+        "stddef.h": "c",
+        "state_control.h": "c"
     }
 }

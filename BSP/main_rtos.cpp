@@ -14,39 +14,46 @@ __IO int stop_flag = 0;
 extern float speed_normal;
 extern float pwm_l;
 extern float pwm_r;
- extern int turn_rectngle_flag;
+extern int turn_rectngle_flag;
+
 void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin);
 void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin);
+void SR04_state_Controller(state_ctrl_t *_ctr_t, float *cin);
+
 state_ctrl_t imu_state_Ctr = {0, 0, 0, NULL, H30_state_ctrl};
 state_ctrl_t gray_state_Ctr = {0, 0, 0, NULL, gw_state_Ctrl};
-int imu_priority=1;
-int finish_one_loop=0;
-//感为
+state_ctrl_t SR04_state_Ctr = {0, 0, 0, NULL, SR04_state_Controller};
+
+int imu_priority = 1;
+int finish_one_loop = 0;
+int obstacle_cnt=0;
+// 感为
 GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor;
 GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor_right;
-//超声波
+// 超声波
 SR04_t front_sr04;
 // ccd数据
 CCD_t front_ccd;
 //********陀螺仪********////////
-__IO	int first_read=0;
+__IO int first_read = 0;
 
- int32_t pitch_all_int=0;
-static float h30_pitch=0;
-float pitch_zero=0;
-float pitch_true=0;
+int32_t pitch_all_int = 0;
+static float h30_pitch = 0;
+float pitch_zero = 0;
+float pitch_true = 0;
 
- int32_t roll_all_int=0;
-static float h30_roll=0;
-float roll_zero=0;
-float roll_true=0;
+int32_t roll_all_int = 0;
+static float h30_roll = 0;
+float roll_zero = 0;
+float roll_true = 0;
 
- int32_t yaw_all_int=0;
-static float h30_yaw=0;
-float yaw_zero=0;
-float yaw_true=0;
+int32_t yaw_all_int = 0;
+static float h30_yaw = 0;
+float yaw_zero = 0;
+float yaw_true = 0;
 
-int turn_once_press=0;
+int turn_times = 0;
+
 USARTInstance uart2 = {0};
 USARTInstance uart3 = {0};
 void usart2_callback(void)
@@ -68,29 +75,29 @@ void usart2_callback(void)
 
 void usart3_callback(void)
 {
-if(uart3.recv_buff[0]==0x59&&uart3.recv_buff[1]==0x53&&uart3.recv_buff[33]==0x40&&uart3.recv_buff[34]==0x0C)
-{
-//pitch_all_int=uart3.recv_buff[46]<<24+uart3.recv_buff[45]<<16+uart3.recv_buff[44]<<8+uart3.recv_buff[43];
-	pitch_all_int=(int)((uart3.recv_buff[38] << 24) | (uart3.recv_buff[37] << 16) | (uart3.recv_buff[36] << 8) |uart3.recv_buff[35]);
-	roll_all_int=(int)((uart3.recv_buff[42] << 24) | (uart3.recv_buff[41] << 16) | (uart3.recv_buff[40] << 8) |uart3.recv_buff[39]);
-		yaw_all_int=(int)((uart3.recv_buff[46] << 24) | (uart3.recv_buff[45] << 16) | (uart3.recv_buff[44] << 8) |uart3.recv_buff[43]);
-	h30_pitch=(pitch_all_int*0.000001f);
-	h30_roll=	(roll_all_int*0.000001f);
-		h30_yaw=(yaw_all_int*0.000001f);
-	if(first_read<20)
-	{
-	pitch_zero=h30_pitch;
-	roll_zero=h30_roll;
-				yaw_zero=h30_yaw;
-		first_read++;
-	}else 
-	{
-	pitch_true=h30_pitch-pitch_zero;
-		roll_true=h30_roll-roll_zero;	
-		yaw_true=h30_yaw-yaw_zero;
-	}
-}
-	
+    if (uart3.recv_buff[0] == 0x59 && uart3.recv_buff[1] == 0x53 && uart3.recv_buff[33] == 0x40 && uart3.recv_buff[34] == 0x0C)
+    {
+        // pitch_all_int=uart3.recv_buff[46]<<24+uart3.recv_buff[45]<<16+uart3.recv_buff[44]<<8+uart3.recv_buff[43];
+        pitch_all_int = (int)((uart3.recv_buff[38] << 24) | (uart3.recv_buff[37] << 16) | (uart3.recv_buff[36] << 8) | uart3.recv_buff[35]);
+        roll_all_int = (int)((uart3.recv_buff[42] << 24) | (uart3.recv_buff[41] << 16) | (uart3.recv_buff[40] << 8) | uart3.recv_buff[39]);
+        yaw_all_int = (int)((uart3.recv_buff[46] << 24) | (uart3.recv_buff[45] << 16) | (uart3.recv_buff[44] << 8) | uart3.recv_buff[43]);
+        h30_pitch = (pitch_all_int * 0.000001f);
+        h30_roll = (roll_all_int * 0.000001f);
+        h30_yaw = (yaw_all_int * 0.000001f);
+        if (first_read < 20)
+        {
+            pitch_zero = h30_pitch;
+            roll_zero = h30_roll;
+            yaw_zero = h30_yaw;
+            first_read++;
+        }
+        else
+        {
+            pitch_true = h30_pitch - pitch_zero;
+            roll_true = h30_roll - roll_zero;
+            yaw_true = h30_yaw - yaw_zero;
+        }
+    }
 }
 
 USART_Init_Config_s uart2_cfg = {
@@ -104,6 +111,34 @@ USART_Init_Config_s uart3_cfg = {
     .module_callback = usart3_callback,
 };
 
+void SR04_state_Controller(state_ctrl_t *_ctr_t, float *cin)
+{
+    switch (_ctr_t->state_Order)
+    {
+    case 0:
+    {
+        if (*cin < 20.0)
+        {
+            _ctr_t->state_Order = 1;
+        }
+        break;
+    }
+    //前方是第一个障碍
+    case 1:
+    {
+         if (*cin >60)
+        {
+            obstacle_cnt++;
+            vTaskDelay(200);
+            _ctr_t->state_Order = 0;
+        } 
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
 {
     switch (_ctr_t->state_Order)
@@ -112,14 +147,14 @@ void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
     {
         if (*cin < -12.0)
         {
-            imu_priority=1;
+            imu_priority = 1;
             _ctr_t->state_Order = 1;
         }
         break;
     }
     case 1:
     {
-         if (*cin < 8.0 && *cin > -12.0)
+        if (*cin < 8.0 && *cin > -12.0)
         {
             _ctr_t->state_Order = 2;
         }
@@ -127,13 +162,13 @@ void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
     }
     case 2:
     {
-         if (*cin > 8.0)      
+        if (*cin > 8.0)
         {
 
-          vTaskDelay(5000);
-          imu_priority=0;
-					_ctr_t->state_Order = -1;
-					gray_state_Ctr.state_Order=0;
+            vTaskDelay(5000);
+            imu_priority = 0;
+            _ctr_t->state_Order = -1;
+            gray_state_Ctr.state_Order = 0;
         }
         break;
     }
@@ -151,25 +186,24 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
         // 状态0加速
     case 0:
     {
-			int white_Cnt=0;
-			for(int i=0;i<7;i++)
-			{
-			if(_ctr_t->data[i]==0)
-				white_Cnt++;		
-			}
-        if (white_Cnt>=5&&
-					Gw_GrayscaleSensor_right.data[0]==1&&Gw_GrayscaleSensor_right.data[1]==1&&Gw_GrayscaleSensor_right.data[2]==1&&Gw_GrayscaleSensor_right.data[3]==1&&Gw_GrayscaleSensor_right.data[4]==1&&Gw_GrayscaleSensor_right.data[5]==1&&
-				Gw_GrayscaleSensor_right.data[6]==1&&Gw_GrayscaleSensor_right.data[7]==1)
+        int white_Cnt = 0;
+        for (int i = 0; i < 7; i++)
+        {
+            if (_ctr_t->data[i] == 0)
+                white_Cnt++;
+        }
+        if (white_Cnt >= 5 &&
+            Gw_GrayscaleSensor_right.data[0] == 1 && Gw_GrayscaleSensor_right.data[1] == 1 && Gw_GrayscaleSensor_right.data[2] == 1 && Gw_GrayscaleSensor_right.data[3] == 1 && Gw_GrayscaleSensor_right.data[4] == 1 && Gw_GrayscaleSensor_right.data[5] == 1 &&
+            Gw_GrayscaleSensor_right.data[6] == 1 && Gw_GrayscaleSensor_right.data[7] == 1)
             _ctr_t->state_Order = 1;
         break;
     }
-		
+
     // 静止
     case 1:
     {
         vTaskDelay(300);
         _ctr_t->state_Order = 2;
-			turn_once_press++;
 
         break;
     }
@@ -177,9 +211,10 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
     case 2:
     {
 
-      if ((Gw_GrayscaleSensor.data[3]==1&&Gw_GrayscaleSensor.data[4]==1&&Gw_GrayscaleSensor.data[5]==1) &&  (Gw_GrayscaleSensor.data[6]==0&&Gw_GrayscaleSensor.data[7]==0))
+        if ((Gw_GrayscaleSensor.data[3] == 1 && Gw_GrayscaleSensor.data[4] == 1 && Gw_GrayscaleSensor.data[5] == 1) && (Gw_GrayscaleSensor.data[6] == 0 && Gw_GrayscaleSensor.data[7] == 0))
         {
             _ctr_t->state_Order = 3;
+            turn_times++;
         }
         break;
     }
@@ -200,14 +235,14 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
     // 旋转
     case 5:
     {
-               if ((Gw_GrayscaleSensor.data[3]==1&&Gw_GrayscaleSensor.data[4]==1&&Gw_GrayscaleSensor.data[5]==1) &&  (Gw_GrayscaleSensor.data[6]==0&&Gw_GrayscaleSensor.data[7]==0))
+        if ((Gw_GrayscaleSensor.data[3] == 1 && Gw_GrayscaleSensor.data[4] == 1 && Gw_GrayscaleSensor.data[5] == 1) && (Gw_GrayscaleSensor.data[6] == 0 && Gw_GrayscaleSensor.data[7] == 0))
         {
             _ctr_t->state_Order = 0;
+            turn_times++;
         }
         break;
     }
 
-		
     default:
         break;
     }
@@ -220,36 +255,35 @@ Motor::dc_motor motorl(htim8, TIM_CHANNEL_4, PH1_GPIO_Port, PH1_Pin, 1);
 Motor::dc_motor motorr(htim8, TIM_CHANNEL_3, PH2_GPIO_Port, PH2_Pin, 0);
 car_state car;
 
-
 TaskHandle_t main_rtos_handle;       // 主函数
 TaskHandle_t state_update_handle;    // 状态更新
 TaskHandle_t data_processing_handle; // 数据获取及处理
 TaskHandle_t pattern_switch_handle;  // 模式切换
 TaskHandle_t gray_read_handle;       // 灰度传感器
-TaskHandle_t H30_state_handle;    // 陀螺仪结算
+TaskHandle_t H30_state_handle;       // 陀螺仪结算
 void gray_read_task(void *pvParameters);
 void state_update(void *pvparameters);
 void data_processing(void *pvparameters);
 void pattern_switch(void *pvparameters);
 void H30_state_task(void *pvparameters);
 
- void main_rtos(void)
+void main_rtos(void)
 {
 
     USARTRegister(&uart2, &uart2_cfg);
     memset(uart2.recv_buff, 0, uart2.recv_buff_size);
-		HAL_Delay(1000);
-USARTRegister(&uart3, &uart3_cfg);
+    HAL_Delay(1000);
+    USARTRegister(&uart3, &uart3_cfg);
     memset(uart3.recv_buff, 0, uart3.recv_buff_size);
 
-//超声波
-		HAL_TIM_Base_Start_IT(&htim11);
-//	HAL_TIM_IC_Start_IT(&htim1,TIM_CHANNEL_2);
-SR04_Register(&front_sr04,SR04_TRIG_GPIO_Port,SR04_TRIG_Pin,&htim1,TIM_CHANNEL_2);
+    // 超声波
+    HAL_TIM_Base_Start_IT(&htim11);
+    //	HAL_TIM_IC_Start_IT(&htim1,TIM_CHANNEL_2);
+    SR04_Register(&front_sr04, SR04_TRIG_GPIO_Port, SR04_TRIG_Pin, &htim1, TIM_CHANNEL_2);
 
     // 灰度
     Gw_GrayscaleSensor = GW_grasycalse::Gw_Grayscale_t(&hi2c1, GW_GRAY_ADDR_DEF);
-		Gw_GrayscaleSensor_right=GW_grasycalse::Gw_Grayscale_t(&hi2c1, GW_GRAY_ADDR_DEF_right);
+    Gw_GrayscaleSensor_right = GW_grasycalse::Gw_Grayscale_t(&hi2c1, GW_GRAY_ADDR_DEF_right);
     motorl.motor_init();
     motorr.motor_init();
     car.car_init();
@@ -279,11 +313,12 @@ void H30_state_task(void *pvparameters)
 
     while (1)
     {
-//			char tx_h30[12];
-//			sprintf(tx_h30,":%f\r\n",pitch_true);
-//HAL_UART_Transmit(&huart3,(uint8_t*)tx_h30,12,20);
-    H30_state_ctrl(&imu_state_Ctr,&pitch_true);
-					SR04_GetData(&front_sr04);
+        //			char tx_h30[12];
+        //			sprintf(tx_h30,":%f\r\n",pitch_true);
+        // HAL_UART_Transmit(&huart3,(uint8_t*)tx_h30,12,20);
+        H30_state_ctrl(&imu_state_Ctr, &pitch_true);
+        SR04_GetData(&front_sr04);
+        SR04_state_Controller(&SR04_state_Ctr, &front_sr04.distant);
         vTaskDelay(100);
     }
 }
@@ -292,14 +327,14 @@ void gray_read_task(void *pvParameters)
 {
     gray_state_Ctr.data = Gw_GrayscaleSensor.data;
 
-    while (Gw_GrayscaleSensor.gw_ping()||Gw_GrayscaleSensor_right.gw_ping())
+    while (Gw_GrayscaleSensor.gw_ping() || Gw_GrayscaleSensor_right.gw_ping())
     {
         vTaskDelay(100);
     }
     while (1)
     {
         Gw_GrayscaleSensor.read_data();
-			Gw_GrayscaleSensor_right.read_data();
+        Gw_GrayscaleSensor_right.read_data();
         gray_state_Ctr.state_func(&gray_state_Ctr, NULL);
         vTaskDelay(20);
     }
@@ -315,13 +350,12 @@ void state_update(void *pvparameters)
             //					speed_normal=1.85;
             car.update_vel_flag = 1;
             speed_normal = 1.3;
-
             car.vel_Control();
             break;
         }
-				case speed_up:
+        case speed_up:
         {
-					
+
             car.update_vel_flag = 1;
             speed_normal = 1.6;
             car.vel_Control();
@@ -334,14 +368,14 @@ void state_update(void *pvparameters)
             car.vel_Control();
             break;
         }
-				  case slow_down_stone:
+        case slow_down_stone:
         {
             car.update_vel_flag = 0;
-              pwm_l = 8;
+            pwm_l = 8;
             pwm_r = 8;
             break;
         }
-				
+
         case turn_state:
         {
             car.update_vel_flag = 0;
@@ -349,13 +383,13 @@ void state_update(void *pvparameters)
             pwm_r = 12;
             break;
         }
-				case turn_state_second:
-				{
-				car.update_vel_flag = 0;
+        case turn_state_second:
+        {
+            car.update_vel_flag = 0;
             pwm_l = -8;
             pwm_r = 14;
             break;
-				}
+        }
         case stop_car:
         {
             car.update_vel_flag = 0;
@@ -368,8 +402,7 @@ void state_update(void *pvparameters)
             break;
         }
 
-
-				vTaskDelay(10);
+        vTaskDelay(10);
     }
 }
 
@@ -380,7 +413,7 @@ void data_processing(void *pvparameters)
         ccd_data_process(&front_ccd);
         car.pos_update(front_ccd.ccd_slope_max_pos);
         // 任务延迟
-	
+
         vTaskDelay(10);
     }
 }
@@ -389,64 +422,69 @@ void pattern_switch(void *pvparameters)
 
     while (1)
     {
-        if(finish_one_loop==0)
+
+        if (finish_one_loop == 0)
         {
-        if(imu_priority==1)
-        {
-            if(imu_state_Ctr.state_Order==0)
-            {               
-            car._car_mode = slow_down;
-            }
-						else if(imu_state_Ctr.state_Order==1)
-						{
-						 car._car_mode = speed_up;
-						
-						}
-						else if(imu_state_Ctr.state_Order==2)
+            if(obstacle_cnt>=4)
             {
-            car._car_mode = slow_down;
+                 imu_priority = 1;
+                imu_state_Ctr.state_Order = 0;
+                obstacle_cnt=0;
+            }
+            if (turn_times >= 4)
+            {
+                imu_priority = 1;
+                turn_times = 0;
+                imu_state_Ctr.state_Order = 0;
             }
 
-        }else if (imu_priority==0)
-        {
-//                if(gray_state_Ctr.state_Order==0&&turn_once_press==0)
-//                car._car_mode = normal;
-//								else if(gray_state_Ctr.state_Order==0&&turn_once_press!=0)
-//								{
-//								car._car_mode = normal;
-//								}
-					
-					 if(gray_state_Ctr.state_Order==0)
-                car._car_mode = normal;
-                else if (gray_state_Ctr.state_Order==1)
+            if (imu_priority == 1)
+            {
+                if (imu_state_Ctr.state_Order == 0)
                 {
-                   car._car_mode=stop_car;  
+                    car._car_mode = slow_down;
                 }
-                else if (gray_state_Ctr.state_Order==2)
+                else if (imu_state_Ctr.state_Order == 1)
                 {
-                  car._car_mode =turn_state;   
+                    car._car_mode = speed_up;
                 }
-                else if (gray_state_Ctr.state_Order==3)
+                else if (imu_state_Ctr.state_Order == 2)
                 {
-                  car._car_mode =normal;  
+                    car._car_mode = slow_down;
                 }
-                 else if (gray_state_Ctr.state_Order==4)
+            }
+            else if (imu_priority == 0)
+            {
+
+                if (gray_state_Ctr.state_Order == 0)
+                    car._car_mode = normal;
+                else if (gray_state_Ctr.state_Order == 1)
                 {
-                   car._car_mode=stop_car;  
+                    car._car_mode = stop_car;
                 }
-                     else if (gray_state_Ctr.state_Order==5||gray_state_Ctr.state_Order==6)
+                else if (gray_state_Ctr.state_Order == 2)
                 {
-                  car._car_mode =turn_state;   
+                    car._car_mode = turn_state;
                 }
-                 
-        }
+                else if (gray_state_Ctr.state_Order == 3)
+                {
+                    car._car_mode = normal;
+                }
+                else if (gray_state_Ctr.state_Order == 4)
+                {
+                    car._car_mode = stop_car;
+                }
+                else if (gray_state_Ctr.state_Order == 5)
+                {
+                    car._car_mode = turn_state;
+                }
+            }
         }
 
-        //最后停下逻辑
-        if(finish_one_loop==1)
+        // 最后停下逻辑
+        if (finish_one_loop == 1)
         {
-				car._car_mode=stop_car;
-
+            car._car_mode = stop_car;
         }
 
         vTaskDelay(10);
