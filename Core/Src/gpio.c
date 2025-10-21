@@ -51,10 +51,7 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SR04_TIRG_GPIO_Port, SR04_TIRG_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, PH2_Pin|PH1_Pin|SPI_CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, SR04_TRIG_Pin|PH2_Pin|PH1_Pin|SPI_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : stop_car_Pin */
   GPIO_InitStruct.Pin = stop_car_Pin;
@@ -62,15 +59,8 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(stop_car_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : SR04_TIRG_Pin */
-  GPIO_InitStruct.Pin = SR04_TIRG_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(SR04_TIRG_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PH2_Pin PH1_Pin */
-  GPIO_InitStruct.Pin = PH2_Pin|PH1_Pin;
+  /*Configure GPIO pins : SR04_TRIG_Pin PH2_Pin PH1_Pin */
+  GPIO_InitStruct.Pin = SR04_TRIG_Pin|PH2_Pin|PH1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

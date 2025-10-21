@@ -8,6 +8,7 @@
 #include "gw_grasycalse.h"
 #include "state_control.h"
 #include "H30_analysis_data.h"
+#include "SR04.h"
 __IO int start_flag = 0;
 __IO int stop_flag = 0;
 extern float speed_normal;
@@ -23,6 +24,8 @@ int finish_one_loop=0;
 //感为
 GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor;
 GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor_right;
+//超声波
+SR04_t front_sr04;
 // ccd数据
 CCD_t front_ccd;
 //********陀螺仪********////////
@@ -107,7 +110,7 @@ void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
     {
     case 0:
     {
-        if (*cin < -10.0)
+        if (*cin < -12.0)
         {
             imu_priority=1;
             _ctr_t->state_Order = 1;
@@ -116,7 +119,7 @@ void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
     }
     case 1:
     {
-         if (*cin < 8.0 && *cin > -10.0)
+         if (*cin < 8.0 && *cin > -12.0)
         {
             _ctr_t->state_Order = 2;
         }
@@ -134,14 +137,6 @@ void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
         }
         break;
     }
-//		case 3:
-//		{
-//		        if (*cin < 8.0 && *cin > -10.0)
-//        {
-//            _ctr_t->state_Order = 2;
-//        }
-//        break;
-//		}
 
     default:
         break;
@@ -247,7 +242,10 @@ void H30_state_task(void *pvparameters);
 USARTRegister(&uart3, &uart3_cfg);
     memset(uart3.recv_buff, 0, uart3.recv_buff_size);
 
-
+//超声波
+		HAL_TIM_Base_Start_IT(&htim11);
+//	HAL_TIM_IC_Start_IT(&htim1,TIM_CHANNEL_2);
+SR04_Register(&front_sr04,SR04_TRIG_GPIO_Port,SR04_TRIG_Pin,&htim1,TIM_CHANNEL_2);
 
     // 灰度
     Gw_GrayscaleSensor = GW_grasycalse::Gw_Grayscale_t(&hi2c1, GW_GRAY_ADDR_DEF);
@@ -285,7 +283,8 @@ void H30_state_task(void *pvparameters)
 //			sprintf(tx_h30,":%f\r\n",pitch_true);
 //HAL_UART_Transmit(&huart3,(uint8_t*)tx_h30,12,20);
     H30_state_ctrl(&imu_state_Ctr,&pitch_true);
-        vTaskDelay(10);
+					SR04_GetData(&front_sr04);
+        vTaskDelay(100);
     }
 }
 
@@ -381,6 +380,7 @@ void data_processing(void *pvparameters)
         ccd_data_process(&front_ccd);
         car.pos_update(front_ccd.ccd_slope_max_pos);
         // 任务延迟
+	
         vTaskDelay(10);
     }
 }
