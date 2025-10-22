@@ -22,7 +22,8 @@ turn_state=2,
 speed_up=3,
 	stop_car=4,
 	turn_state_second=5,
-	slow_down_stone=6
+	slow_down_stone=6,
+	begin_state=7
 	
 }car_run_mode;
 
