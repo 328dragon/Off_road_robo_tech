@@ -27,6 +27,7 @@ state_ctrl_t SR04_state_Ctr = {0, 0, 0, NULL, SR04_state_Controller};
 int imu_priority = 1;
 int finish_one_loop = 0;
 int obstacle_cnt=0;
+__IO	int normal_time_cnt=-1;
 // 感为
 GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor;
 GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor_right;
@@ -35,6 +36,8 @@ SR04_t front_sr04;
 // ccd数据
 CCD_t front_ccd;
 //********陀螺仪********////////
+
+#define imu_yaw_limit 4
 __IO int first_read = 0;
 
 int32_t pitch_all_int = 0;
@@ -164,14 +167,20 @@ void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
     {
         if (*cin > 8.0)
         {
-
-            vTaskDelay(5000);
-            imu_priority = 0;
-            _ctr_t->state_Order = -1;
-            gray_state_Ctr.state_Order = 0;
+					vTaskDelay(1500);
+            _ctr_t->state_Order = 3;
         }
         break;
     }
+		
+		case 3:
+		{
+			vTaskDelay(4000);
+			normal_time_cnt=0;
+     imu_priority = 0;
+            _ctr_t->state_Order = -1;
+            gray_state_Ctr.state_Order = 0;
+		}
 
     default:
         break;
@@ -347,7 +356,6 @@ void state_update(void *pvparameters)
         {
         case normal:
         {
-            //					speed_normal=1.85;
             car.update_vel_flag = 1;
             speed_normal = 1.3;
             car.vel_Control();
@@ -357,7 +365,10 @@ void state_update(void *pvparameters)
         {
 
             car.update_vel_flag = 1;
-            speed_normal = 1.6;
+						speed_normal = 1.45;
+						car.vel_Control();
+						vTaskDelay(30);
+            speed_normal = 1.8;
             car.vel_Control();
             break;
         }
@@ -371,16 +382,29 @@ void state_update(void *pvparameters)
         case slow_down_stone:
         {
             car.update_vel_flag = 0;
-            pwm_l = 8;
-            pwm_r = 8;
+					float yaw_limit=0;
+					if(yaw_true>=imu_yaw_limit)
+					{
+					yaw_limit=imu_yaw_limit;
+					}else if(yaw_true<=-imu_yaw_limit)
+					{
+					
+					yaw_limit=-imu_yaw_limit;}
+					else 
+					{
+					yaw_limit=yaw_true;
+					}
+					
+            pwm_l = 8+yaw_limit*0.5;
+            pwm_r = 8-yaw_limit*0.5;
             break;
         }
 
         case turn_state:
         {
             car.update_vel_flag = 0;
-            pwm_l = -8;
-            pwm_r = 12;
+            pwm_l = -7;
+            pwm_r = 13;
             break;
         }
         case turn_state_second:
@@ -419,20 +443,18 @@ void data_processing(void *pvparameters)
 }
 void pattern_switch(void *pvparameters)
 {
+	
+
 
     while (1)
     {
 
         if (finish_one_loop == 0)
         {
-            if(obstacle_cnt>=4)
-            {
-                 imu_priority = 1;
-                imu_state_Ctr.state_Order = 0;
-                obstacle_cnt=0;
-            }
+
             if (turn_times >= 4)
             {
+							  vTaskDelay(300);
                 imu_priority = 1;
                 turn_times = 0;
                 imu_state_Ctr.state_Order = 0;
@@ -452,12 +474,26 @@ void pattern_switch(void *pvparameters)
                 {
                     car._car_mode = slow_down;
                 }
+								else if (imu_state_Ctr.state_Order == 3)
+                {
+                    car._car_mode = slow_down_stone;
+                }
             }
             else if (imu_priority == 0)
             {
-
-                if (gray_state_Ctr.state_Order == 0)
+							if(normal_time_cnt>=0&&gray_state_Ctr.state_Order == 0)
+							{
+							normal_time_cnt++;
+							}
+							if(normal_time_cnt>=200)
+							{							
+											gray_state_Ctr.state_Order = -1;
+								normal_time_cnt=-1;
+							}
+								if (gray_state_Ctr.state_Order == -1)
                     car._car_mode = normal;
+                if (gray_state_Ctr.state_Order == 0)
+                    car._car_mode = slow_down;
                 else if (gray_state_Ctr.state_Order == 1)
                 {
                     car._car_mode = stop_car;
@@ -468,7 +504,7 @@ void pattern_switch(void *pvparameters)
                 }
                 else if (gray_state_Ctr.state_Order == 3)
                 {
-                    car._car_mode = normal;
+                    car._car_mode = slow_down;
                 }
                 else if (gray_state_Ctr.state_Order == 4)
                 {
