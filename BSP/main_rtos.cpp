@@ -15,6 +15,7 @@ extern float speed_normal;
 extern float pwm_l;
 extern float pwm_r;
 extern int turn_rectngle_flag;
+extern pid_t revise_ccd_pid;
 
 void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin);
 void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin);
@@ -56,6 +57,8 @@ float yaw_zero = 0;
 float yaw_true = 0;
 
 int turn_times = 0;
+int one_round = 0;
+int round_kind=inside;
 
 USARTInstance uart2 = {0};
 USARTInstance uart3 = {0};
@@ -143,7 +146,8 @@ void SR04_state_Controller(state_ctrl_t *_ctr_t, float *cin)
 }
 
 void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
-{
+{		
+	
     switch (_ctr_t->state_Order)
     {
     case 0:
@@ -175,11 +179,16 @@ void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
 		
 		case 3:
 		{
-			vTaskDelay(4000);
+			vTaskDelay(2000);
 			normal_time_cnt=0;
-     imu_priority = 0;
-            _ctr_t->state_Order = -1;
-            gray_state_Ctr.state_Order = 0;
+			imu_priority = 0;
+			one_round=0;
+//			if(normal_time_cnt == -1)
+//			{
+//				 vTaskDelay(1000);
+//			}
+      _ctr_t->state_Order = -1;
+      gray_state_Ctr.state_Order = 0;
 		}
 
     default:
@@ -189,8 +198,10 @@ void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
 
 // 内圈感为状态机
 void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
-{
-    switch (_ctr_t->state_Order)
+{		
+	if(round_kind==inside)
+	{
+		switch (_ctr_t->state_Order)
     {
         // 状态0加速
     case 0:
@@ -202,12 +213,15 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
                 white_Cnt++;
         }
         if (white_Cnt >= 5 &&
-            Gw_GrayscaleSensor_right.data[0] == 1 && Gw_GrayscaleSensor_right.data[1] == 1 && Gw_GrayscaleSensor_right.data[2] == 1 && Gw_GrayscaleSensor_right.data[3] == 1 && Gw_GrayscaleSensor_right.data[4] == 1 && Gw_GrayscaleSensor_right.data[5] == 1 &&
+            Gw_GrayscaleSensor_right.data[4] == 1 && Gw_GrayscaleSensor_right.data[5] == 1 &&
             Gw_GrayscaleSensor_right.data[6] == 1 && Gw_GrayscaleSensor_right.data[7] == 1)
-            _ctr_t->state_Order = 1;
+				{
+					_ctr_t->state_Order = 1;
+					round_kind=inside;
+				}
+         
         break;
     }
-
     // 静止
     case 1:
     {
@@ -218,9 +232,10 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
     }
     // 状态2旋转
     case 2:
-    {
-
-        if ((Gw_GrayscaleSensor.data[3] == 1 && Gw_GrayscaleSensor.data[4] == 1 && Gw_GrayscaleSensor.data[5] == 1) && (Gw_GrayscaleSensor.data[6] == 0 && Gw_GrayscaleSensor.data[7] == 0))
+    {	
+//				if ((Gw_GrayscaleSensor.data[3] == 1 && Gw_GrayscaleSensor.data[4] == 1 ) && (Gw_GrayscaleSensor.data[6] == 0 
+//					&& Gw_GrayscaleSensor.data[7] == 0))
+        if ((Gw_GrayscaleSensor.data[6] == 1 && Gw_GrayscaleSensor.data[7] == 1)&&Gw_GrayscaleSensor_right.data[0]==0)
         {
             _ctr_t->state_Order = 3;
             turn_times++;
@@ -234,7 +249,7 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
             _ctr_t->state_Order = 4;
         break;
     }
-        // 停下等待1s
+     // 停下等待1s
     case 4:
     {
         vTaskDelay(300);
@@ -244,17 +259,18 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
     // 旋转
     case 5:
     {
-        if ((Gw_GrayscaleSensor.data[3] == 1 && Gw_GrayscaleSensor.data[4] == 1 && Gw_GrayscaleSensor.data[5] == 1) && (Gw_GrayscaleSensor.data[6] == 0 && Gw_GrayscaleSensor.data[7] == 0))
+        if (Gw_GrayscaleSensor.data[5] == 1 && (Gw_GrayscaleSensor.data[6] == 1 && Gw_GrayscaleSensor.data[7] == 0))
+//				if ((Gw_GrayscaleSensor.data[6] == 1 && Gw_GrayscaleSensor.data[7] == 1)&&Gw_GrayscaleSensor_right.data[0]==0)
         {
             _ctr_t->state_Order = 0;
             turn_times++;
         }
         break;
     }
-
     default:
         break;
     }
+	} 
 }
 
 #define abs(x) (((x) > 0) ? (x) : (-(x)))
@@ -355,33 +371,43 @@ void state_update(void *pvparameters)
         switch (car._car_mode)
         {
         case normal:
-        {
+        {		pid_reset(&revise_ccd_pid,0.03,0,0.003);
             car.update_vel_flag = 1;
+						speed_normal = 1.0;
+						car.vel_Control();
+						vTaskDelay(150);
             speed_normal = 1.3;
             car.vel_Control();
             break;
         }
         case speed_up:
         {
-
             car.update_vel_flag = 1;
-						speed_normal = 1.45;
+						speed_normal = 1.2;
 						car.vel_Control();
-						vTaskDelay(30);
-            speed_normal = 1.8;
+						vTaskDelay(1000);
+						pid_reset(&revise_ccd_pid,0.03,0,0.003);
+            speed_normal = 1.6;
             car.vel_Control();
             break;
         }
         case slow_down:
-        {
+        {		pid_reset(&revise_ccd_pid,0.03,0,0.003);
             car.update_vel_flag = 1;
-            speed_normal = 0.8;
+            speed_normal = 1.0;
             car.vel_Control();
             break;
         }
+				case speed_up_obstacal:
+				{		pid_reset(&revise_ccd_pid,0.03,0,0.003);
+						car.update_vel_flag = 1;
+						speed_normal = 1.65;
+						car.vel_Control();
+            break;
+				}
         case slow_down_stone:
         {
-            car.update_vel_flag = 0;
+           car.update_vel_flag = 0;
 					float yaw_limit=0;
 					if(yaw_true>=imu_yaw_limit)
 					{
@@ -395,23 +421,23 @@ void state_update(void *pvparameters)
 					yaw_limit=yaw_true;
 					}
 					
-            pwm_l = 8+yaw_limit*0.5;
-            pwm_r = 8-yaw_limit*0.5;
+            pwm_l = 10+yaw_limit*0.8;
+            pwm_r = 10-yaw_limit*0.8;
             break;
         }
 
         case turn_state:
-        {
+        {		
             car.update_vel_flag = 0;
-            pwm_l = -7;
-            pwm_r = 13;
+            pwm_l = -8;
+            pwm_r = 12;
             break;
         }
         case turn_state_second:
         {
             car.update_vel_flag = 0;
-            pwm_l = -8;
-            pwm_r = 14;
+            pwm_l = -7;
+            pwm_r = 15;
             break;
         }
         case stop_car:
@@ -454,9 +480,13 @@ void pattern_switch(void *pvparameters)
 
             if (turn_times >= 4)
             {
-							  vTaskDelay(300);
+							  vTaskDelay(500);
                 imu_priority = 1;
-                turn_times = 0;
+								one_round=1;
+								if(one_round==0)
+								{
+									turn_times = 0;
+								}
                 imu_state_Ctr.state_Order = 0;
             }
 
@@ -464,11 +494,11 @@ void pattern_switch(void *pvparameters)
             {
                 if (imu_state_Ctr.state_Order == 0)
                 {
-                    car._car_mode = slow_down;
+                    car._car_mode = normal;
                 }
                 else if (imu_state_Ctr.state_Order == 1)
                 {
-                    car._car_mode = speed_up;
+                    car._car_mode = speed_up_obstacal;
                 }
                 else if (imu_state_Ctr.state_Order == 2)
                 {
@@ -485,14 +515,17 @@ void pattern_switch(void *pvparameters)
 							{
 							normal_time_cnt++;
 							}
-							if(normal_time_cnt>=200)
+							if(normal_time_cnt>=150)
 							{							
-											gray_state_Ctr.state_Order = -1;
+								gray_state_Ctr.state_Order = -1;
 								normal_time_cnt=-1;
+								round_kind=outside;
 							}
 								if (gray_state_Ctr.state_Order == -1)
                     car._car_mode = normal;
-                if (gray_state_Ctr.state_Order == 0)
+                if (gray_state_Ctr.state_Order == 0 && turn_times == 2)
+                    car._car_mode = normal;
+								else if (gray_state_Ctr.state_Order == 0 && turn_times == 0)
                     car._car_mode = slow_down;
                 else if (gray_state_Ctr.state_Order == 1)
                 {
@@ -513,6 +546,7 @@ void pattern_switch(void *pvparameters)
                 else if (gray_state_Ctr.state_Order == 5)
                 {
                     car._car_mode = turn_state;
+										normal_time_cnt=-1;
                 }
             }
         }

@@ -6,7 +6,7 @@
 #define far_linear_limit 30
 #define Quadratic_limit 35
 
-#define linear_k 0.43
+#define linear_k 0.4
 #define far_linear_k 4
 #define Quadratic_k 2.5
 
@@ -15,8 +15,8 @@ pid_t revise_ccd_pid;
 extern Motor::dc_motor motorl;
 extern Motor::dc_motor motorr;
 
-float  speed_normal = 1.85;
-float  speed_revise =0;
+float  speed_normal = 0;
+float  speed_revise = 0;
 
 float f(float error, int state)
 {   
@@ -58,8 +58,8 @@ return pid_calc(pid,get,set);
 
 void car_state::car_init(void)
 {
-PID_struct_init(&revise_ccd_pid,POSITION_PID,0.8,0,0.03,0,0.003);
-//	PID_struct_init(&revise_ccd_pid,POSITION_PID,0.8,0,0.021,0,0.0015);
+PID_struct_init(&revise_ccd_pid,POSITION_PID,1.0,0,0.03,0,0.002);
+//	PID_struct_init(&revise_ccd_pid,POSITION_PID,0.8,0,0.025,0,0.002);
 }
 
 car_state::car_state()

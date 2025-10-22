@@ -20,12 +20,18 @@ normal=0,
 slow_down=1,
 turn_state=2,
 speed_up=3,
-	stop_car=4,
-	turn_state_second=5,
-	slow_down_stone=6
+stop_car=4,
+turn_state_second=5,
+slow_down_stone=6,
+speed_up_obstacal=7
 	
 }car_run_mode;
 
+typedef enum
+{
+inside=0,
+outside=1,
+}car_round_state;
 
 class car_state
 {
