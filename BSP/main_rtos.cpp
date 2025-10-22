@@ -513,6 +513,7 @@ void pattern_switch(void *pvparameters)
                 else if (gray_state_Ctr.state_Order == 5)
                 {
                     car._car_mode = turn_state;
+										normal_time_cnt=-1;
                 }
             }
         }
