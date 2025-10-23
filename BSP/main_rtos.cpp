@@ -16,15 +16,12 @@ extern float pwm_l;
 extern float pwm_r;
 extern int turn_rectngle_flag;
 
-state_ctrl_t imu_state_Ctr = {0, 0, 0, NULL, H30_state_ctrl};
+state_ctrl_t imu_yaw_state_Ctr = {0, 0, 0, NULL, H30_yaw_state_ctrl};
+state_ctrl_t imu_pitch_state_Ctr = {0, 0, 0, NULL, H30_state_ctrl};
 state_ctrl_t gray_state_Ctr = {0, 0, 0, NULL, gw_state_Ctrl};
 state_ctrl_t SR04_state_Ctr = {0, 0, 0, NULL, SR04_state_Controller};
 
-int imu_priority = 1;
-int finish_one_loop = 0;
-int obstacle_cnt = 0;
-__IO int normal_time_cnt = -1;
-int turn_times = 0;
+
 // 感为
 GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor;
 GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor_right;
@@ -137,10 +134,9 @@ void H30_state_task(void *pvparameters)
 
     while (1)
     {
-        //			char tx_h30[12];
-        //			sprintf(tx_h30,":%f\r\n",pitch_true);
-        // HAL_UART_Transmit(&huart3,(uint8_t*)tx_h30,12,20);
-        H30_state_ctrl(&imu_state_Ctr, &pitch_true);
+        H30_state_ctrl(&imu_pitch_state_Ctr, &pitch_true);
+				H30_yaw_state_ctrl(&imu_yaw_state_Ctr,&yaw_true);
+			
         SR04_GetData(&front_sr04);
         SR04_state_Controller(&SR04_state_Ctr, &front_sr04.distant);
         vTaskDelay(100);
