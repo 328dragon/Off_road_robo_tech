@@ -16,9 +16,10 @@ int loop_times= 0;
 int obstacle_cnt = 0;
 __IO int normal_time_cnt = -1;
 int turn_times = 0;
+extern __IO int stop_flag;
+__IO int exist_turn_rectangle_flag=0;
 
-int exist_turn_rectangle_flag=0;
-
+int up_true_slope=0;
 
 // 陀螺仪
 extern float pitch_true;
@@ -33,7 +34,7 @@ void H30_yaw_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
     case 0:
     {
         // 走过一个pI的时候
-        if (*cin < 3.5 && *cin > 2.9)
+        if ((*cin > 170 && *cin <=179 )||(*cin < -170 && *cin > -180))
         {
             _ctr_t->state_Order = 1;
         }
@@ -41,10 +42,10 @@ void H30_yaw_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
     }
     case 1:
     {
-        if (*cin > -0.2 && *cin < 0.2)
+        if ( *cin > -5 && *cin < 5)
         {
             vTaskDelay(200);
-					loop_times++;
+						loop_times++;
             _ctr_t->state_Order = 0;
             imu_priority = 1;
             imu_pitch_state_Ctr.state_Order = 0;
@@ -93,12 +94,15 @@ void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
         if (*cin < -12.0)
         {
             imu_priority = 1;
-            _ctr_t->state_Order = 1;
+						up_true_slope++;
+					if(up_true_slope>2){
+            _ctr_t->state_Order = 1;}
         }
         break;
     }
     case 1:
     {
+				up_true_slope=0;
         if (*cin < 8.0 && *cin > -12.0)
         {
             _ctr_t->state_Order = 2;
@@ -117,11 +121,19 @@ void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
 
     case 3:
     {
-        vTaskDelay(4000);
+        vTaskDelay(3500);
         normal_time_cnt = 0;
         imu_priority = 0;
         _ctr_t->state_Order = -1;
-        gray_state_Ctr.state_Order = 0;
+			//第2或第三圈，并且没转过弯
+			if(loop_times>0&&exist_turn_rectangle_flag==0)
+			{
+			gray_state_Ctr.state_Order = -2;
+			}else 
+			{
+			gray_state_Ctr.state_Order = 0;
+			}			
+			break;
     }
 
     default:
@@ -250,7 +262,6 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
         {
             _ctr_t->state_Order = 0;
             turn_times++;
-					loop_times++;
         }
         break;
     }
@@ -268,14 +279,14 @@ void car_speed_state_switch(car_state *car)
     case begin_state:
     {
         car->update_vel_flag = 1;
-        speed_normal = 0.9;
+        speed_normal = 1.1;
         car->vel_Control();
         break;
     }
     case normal:
     {
         car->update_vel_flag = 1;
-        speed_normal = 1.3;
+        speed_normal = 1.2;
         car->vel_Control();
         break;
     }
@@ -283,10 +294,10 @@ void car_speed_state_switch(car_state *car)
     {
 
         car->update_vel_flag = 1;
-        speed_normal = 1.7;
+        speed_normal = 1.35;
         car->vel_Control();
-        vTaskDelay(30);
-        speed_normal = 1.8;
+        vTaskDelay(50);
+        speed_normal = 1.75;
         car->vel_Control();
         break;
     }
@@ -350,8 +361,6 @@ void car_speed_state_switch(car_state *car)
 
 void car_patter_Switch(car_state *car)
 {
-
-
         if (turn_times >= 4)
         {
             vTaskDelay(300);
@@ -360,6 +369,12 @@ void car_patter_Switch(car_state *car)
             imu_pitch_state_Ctr.state_Order = 0;
         }
 
+				if(loop_times==3)
+				{
+				vTaskDelay(1000);
+				stop_flag=1;
+				}
+				
         if (imu_priority == 1)
         {
             if (imu_pitch_state_Ctr.state_Order == 0)
@@ -392,11 +407,13 @@ void car_patter_Switch(car_state *car)
                 gray_state_Ctr.state_Order = -1;
                 normal_time_cnt = -1;
             }				
-						}else if(loop_times>0&&exist_turn_rectangle_flag==0)
-						{
-						 gray_state_Ctr.state_Order = -1;					
 						}
-          			
+          	if(gray_state_Ctr.state_Order == -2)
+						{
+								car->_car_mode = slow_down;
+								vTaskDelay(2000);
+								gray_state_Ctr.state_Order = -1;					
+						}
             if (gray_state_Ctr.state_Order == -1)
                 car->_car_mode = normal;
             if (gray_state_Ctr.state_Order == 0)

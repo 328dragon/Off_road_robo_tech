@@ -139,6 +139,10 @@ void H30_state_task(void *pvparameters)
 			
         SR04_GetData(&front_sr04);
         SR04_state_Controller(&SR04_state_Ctr, &front_sr04.distant);
+			
+			char gray_order[10];
+			sprintf(gray_order,"%d\r\n",gray_state_Ctr.state_Order);
+			HAL_UART_Transmit_DMA(&huart2,(uint8_t*)gray_order,10);
         vTaskDelay(100);
     }
 }
