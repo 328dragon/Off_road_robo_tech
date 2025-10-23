@@ -44,7 +44,7 @@ void usart2_callback(void)
         //"start检验"
         if (uart2.recv_buff[1] == 0x13 && uart2.recv_buff[2] == 0x00 && uart2.recv_buff[3] == 0x13)
         {
-            start_flag = 1;
+//            start_flag = 1;
         }
         if (uart2.recv_buff[1] == 0x0A && uart2.recv_buff[2] == 0x42 && uart2.recv_buff[3] == 0x4C)
         {
@@ -185,7 +185,6 @@ void data_processing(void *pvparameters)
 }
 void pattern_switch(void *pvparameters)
 {
-
     while (1)
     {
         car_patter_Switch(&car);

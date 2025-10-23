@@ -3,12 +3,12 @@
 #define right_ccd_limit 15
 
 #define linear_Limit 3
-#define far_linear_limit 30
+#define far_linear_limit 25
 #define Quadratic_limit 35
 
-#define linear_k 0.43
-#define far_linear_k 4
-#define Quadratic_k 2.5
+#define linear_k 0.45
+#define far_linear_k 2
+#define Quadratic_k 2
 
 
 pid_t revise_ccd_pid;

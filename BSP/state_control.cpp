@@ -1,8 +1,10 @@
 #include "state_control.h"
+#include "pid.h"
 extern float speed_normal;
 extern float pwm_l;
 extern float pwm_r;
 extern int turn_rectngle_flag;
+extern pid_t revise_ccd_pid;
 
 extern state_ctrl_t imu_pitch_state_Ctr;
 extern state_ctrl_t gray_state_Ctr;
@@ -17,9 +19,11 @@ int obstacle_cnt = 0;
 __IO int normal_time_cnt = -1;
 int turn_times = 0;
 extern __IO int stop_flag;
+extern __IO int start_flag;
 __IO int exist_turn_rectangle_flag=0;
 
 int up_true_slope=0;
+int SR04_switch=0;
 
 // 陀螺仪
 extern float pitch_true;
@@ -56,27 +60,37 @@ void H30_yaw_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
         break;
     }
 }
-
+//超声波启动
 void SR04_state_Controller(state_ctrl_t *_ctr_t, float *cin)
-{
-    switch (_ctr_t->state_Order)
+{		
+	switch (_ctr_t->state_Order)
     {
     case 0:
     {
-        if (*cin < 20.0)
+        if (*cin < 50.0)
         {
-            _ctr_t->state_Order = 1;
+						SR04_switch++;
+						vTaskDelay(200);
+						if(SR04_switch>=5)
+						{
+							_ctr_t->state_Order = 1;
+						}
         }
         break;
     }
-    // 前方是第一个障碍
+
     case 1:
     {
-        if (*cin > 60)
-        {
-            obstacle_cnt++;
-            vTaskDelay(200);
-            _ctr_t->state_Order = 0;
+        if (*cin > 150)
+        {		
+						SR04_switch--;
+//          obstacle_cnt++;
+					  vTaskDelay(200);
+						if(SR04_switch<=0)
+						{
+							start_flag = 1;
+							_ctr_t->state_Order = 2;
+						}
         }
         break;
     }
@@ -121,7 +135,7 @@ void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
 
     case 3:
     {
-        vTaskDelay(3500);
+        vTaskDelay(3000);
         normal_time_cnt = 0;
         imu_priority = 0;
         _ctr_t->state_Order = -1;
@@ -279,25 +293,24 @@ void car_speed_state_switch(car_state *car)
     case begin_state:
     {
         car->update_vel_flag = 1;
-        speed_normal = 1.1;
+				pid_reset(&revise_ccd_pid,0.015,0,0.03);//normal_speed=1.6时pid参数
+        speed_normal = 1.6;
+//				pid_reset(&revise_ccd_pid,0.04,0,0.01);//normal_speed=1.4时pid参数
+//        speed_normal = 1.4;
         car->vel_Control();
         break;
     }
     case normal:
     {
         car->update_vel_flag = 1;
-        speed_normal = 1.2;
+        speed_normal = 1.4;
         car->vel_Control();
         break;
     }
     case speed_up:
     {
-
         car->update_vel_flag = 1;
-        speed_normal = 1.35;
-        car->vel_Control();
-        vTaskDelay(50);
-        speed_normal = 1.75;
+        speed_normal = 1.8;
         car->vel_Control();
         break;
     }
@@ -326,8 +339,8 @@ void car_speed_state_switch(car_state *car)
             yaw_limit = yaw_true;
         }
 
-        pwm_l = 8 + yaw_limit * 0.5;
-        pwm_r = 8 - yaw_limit * 0.5;
+        pwm_l = 10 + yaw_limit * 0.8;
+        pwm_r = 10 - yaw_limit * 0.8;
         break;
     }
 
@@ -363,7 +376,7 @@ void car_patter_Switch(car_state *car)
 {
         if (turn_times >= 4)
         {
-            vTaskDelay(300);
+            vTaskDelay(250);
             imu_priority = 1;
             turn_times = 0;
             imu_pitch_state_Ctr.state_Order = 0;
@@ -371,8 +384,8 @@ void car_patter_Switch(car_state *car)
 
 				if(loop_times==3)
 				{
-				vTaskDelay(1000);
-				stop_flag=1;
+					vTaskDelay(1000);
+					stop_flag=1;
 				}
 				
         if (imu_priority == 1)
