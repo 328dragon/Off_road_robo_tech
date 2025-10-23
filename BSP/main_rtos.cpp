@@ -17,7 +17,7 @@ extern float pwm_r;
 extern int turn_rectngle_flag;
 
 state_ctrl_t imu_yaw_state_Ctr = {0, 0, 0, NULL, H30_yaw_state_ctrl};
-state_ctrl_t imu_pitch_state_Ctr = {0, 0, 0, NULL, H30_state_ctrl};
+state_ctrl_t imu_pitch_state_Ctr = {0, 0, 0, NULL, H30_pitch_state_ctrl};
 state_ctrl_t gray_state_Ctr = {0, 0, 0, NULL, gw_state_Ctrl};
 state_ctrl_t SR04_state_Ctr = {0, 0, 0, NULL, SR04_state_Controller};
 
@@ -134,7 +134,7 @@ void H30_state_task(void *pvparameters)
 
     while (1)
     {
-        H30_state_ctrl(&imu_pitch_state_Ctr, &pitch_true);
+        H30_pitch_state_ctrl(&imu_pitch_state_Ctr, &pitch_true);
 				H30_yaw_state_ctrl(&imu_yaw_state_Ctr,&yaw_true);
 			
         SR04_GetData(&front_sr04);

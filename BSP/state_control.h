@@ -20,7 +20,7 @@ uint8_t *data;
 }state_ctrl_t;
 
 void H30_yaw_state_ctrl(state_ctrl_t *_ctr_t, float *cin);
-void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin);
+void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin);
 void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin);
 void SR04_state_Controller(state_ctrl_t *_ctr_t, float *cin);
 void car_speed_state_switch(car_state *car);

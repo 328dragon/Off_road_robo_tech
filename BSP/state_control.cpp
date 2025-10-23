@@ -84,7 +84,7 @@ void SR04_state_Controller(state_ctrl_t *_ctr_t, float *cin)
     }
 }
 
-void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
+void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
 {
     switch (_ctr_t->state_Order)
     {
