@@ -2,10 +2,12 @@
 #define __STATE_CONTROL_H
 
 #include "main.h"
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+#include "FreeRTOS.h"
+#include "task.h"
+#include "gw_grasycalse.h"
+#include "H30_analysis_data.h"
+#include "SR04.h"
+#include "control.h"
 
 typedef struct  _
 {
@@ -18,11 +20,10 @@ uint8_t *data;
 }state_ctrl_t;
 
 
-
-#ifdef __cplusplus
-}
-#endif
-
-
+void H30_state_ctrl(state_ctrl_t *_ctr_t, float *cin);
+void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin);
+void SR04_state_Controller(state_ctrl_t *_ctr_t, float *cin);
+void car_speed_state_switch(car_state *car);
+void car_patter_Switch(car_state *car);
 #endif 
 

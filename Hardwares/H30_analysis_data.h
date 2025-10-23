@@ -5,7 +5,10 @@
 extern "C"
 {
 #endif
-
+	
+	#define imu_yaw_limit 4
+	
+void H30_analysis_data(uint8_t *recv_buff);
 
 #ifdef __cplusplus
 }
