@@ -16,7 +16,7 @@ extern GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor_right;
 int imu_priority = 1;
 int loop_times= 0;
 int obstacle_cnt = 0;
-__IO int normal_time_cnt = -1;
+__IO int normal_time_cnt = -2;
 int turn_times = 0;
 extern __IO int stop_flag;
 extern __IO int start_flag;
@@ -24,6 +24,7 @@ __IO int exist_turn_rectangle_flag=0;
 
 int up_true_slope=0;
 int SR04_switch=0;
+int half_loop = 0;
 
 // 陀螺仪
 extern float pitch_true;
@@ -41,6 +42,7 @@ void H30_yaw_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
         if ((*cin > 170 && *cin <=179 )||(*cin < -170 && *cin > -180))
         {
             _ctr_t->state_Order = 1;
+						half_loop = 1;
         }
         break;
     }
@@ -50,9 +52,15 @@ void H30_yaw_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
         {
             vTaskDelay(200);
 						loop_times++;
+						half_loop=0;
             _ctr_t->state_Order = 0;
             imu_priority = 1;
             imu_pitch_state_Ctr.state_Order = 0;
+						if(exist_turn_rectangle_flag==1)
+							SR04_state_Ctr.state_Order = -1;
+						else if	(exist_turn_rectangle_flag==0)
+							SR04_state_Ctr.state_Order = 2;
+						
         }
         break;
     }
@@ -70,7 +78,7 @@ void SR04_state_Controller(state_ctrl_t *_ctr_t, float *cin)
         if (*cin < 50.0)
         {
 						SR04_switch++;
-						vTaskDelay(200);
+						vTaskDelay(100);
 						if(SR04_switch>=5)
 						{
 							_ctr_t->state_Order = 1;
@@ -81,11 +89,11 @@ void SR04_state_Controller(state_ctrl_t *_ctr_t, float *cin)
 
     case 1:
     {
-        if (*cin > 150)
+        if (*cin > 50)
         {		
 						SR04_switch--;
 //          obstacle_cnt++;
-					  vTaskDelay(200);
+					  vTaskDelay(100);
 						if(SR04_switch<=0)
 						{
 							start_flag = 1;
@@ -94,6 +102,22 @@ void SR04_state_Controller(state_ctrl_t *_ctr_t, float *cin)
         }
         break;
     }
+		case 2:
+		{
+				if(half_loop==1)
+				{
+					half_loop = -1;
+					vTaskDelay(2000);//确保过双峰不会误判
+					_ctr_t->state_Order = 3;
+				}
+				break;
+		}
+		case 3:
+		{		
+				if(*cin < 100)
+				imu_pitch_state_Ctr.state_Order = 4;
+				_ctr_t->state_Order = -1;
+		}
     default:
         break;
     }
@@ -135,7 +159,7 @@ void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
 
     case 3:
     {
-        vTaskDelay(3000);
+        vTaskDelay(2000);
         normal_time_cnt = 0;
         imu_priority = 0;
         _ctr_t->state_Order = -1;
@@ -148,6 +172,37 @@ void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
 			gray_state_Ctr.state_Order = 0;
 			}			
 			break;
+    }
+		//上阶梯坡
+		case 4:
+    {
+        if (*cin < -12.0)
+        {
+            imu_priority = 1;
+						up_true_slope++;
+					if(up_true_slope>2){
+            _ctr_t->state_Order = 5;}
+        }
+        break;
+    }
+    case 5:
+    {
+				up_true_slope=0;
+        if (*cin < 8.0 && *cin > -12.0)
+        {
+            _ctr_t->state_Order = 6;
+        }
+        break;
+    }
+    case 6:
+    {
+        if (*cin > 8.0)
+        {
+            vTaskDelay(1000);
+            imu_priority = 0;
+						_ctr_t->state_Order = -1;
+        }
+        break;
     }
 
     default:
@@ -169,9 +224,10 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
             if (_ctr_t->data[i] == 0)
                 white_Cnt++;
         }
-        if (white_Cnt >= 5 &&
-            Gw_GrayscaleSensor_right.data[0] == 1 && Gw_GrayscaleSensor_right.data[1] == 1 && Gw_GrayscaleSensor_right.data[2] == 1 && Gw_GrayscaleSensor_right.data[3] == 1 && Gw_GrayscaleSensor_right.data[4] == 1 && Gw_GrayscaleSensor_right.data[5] == 1 &&
-            Gw_GrayscaleSensor_right.data[6] == 1 && Gw_GrayscaleSensor_right.data[7] == 1)
+//        if (white_Cnt >= 5 &&
+//            Gw_GrayscaleSensor_right.data[0] == 1 && Gw_GrayscaleSensor_right.data[1] == 1 && Gw_GrayscaleSensor_right.data[2] == 1 && Gw_GrayscaleSensor_right.data[3] == 1 && Gw_GrayscaleSensor_right.data[4] == 1 && Gw_GrayscaleSensor_right.data[5] == 1 &&
+//            Gw_GrayscaleSensor_right.data[6] == 1 && Gw_GrayscaleSensor_right.data[7] == 1)
+				if (white_Cnt >= 5)
             _ctr_t->state_Order = 1;
         break;
     }
@@ -228,9 +284,7 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
             if (_ctr_t->data[i] == 0)
                 white_Cnt++;
         }
-        if (white_Cnt >= 5 &&
-            Gw_GrayscaleSensor_right.data[0] == 1 && Gw_GrayscaleSensor_right.data[1] == 1 && Gw_GrayscaleSensor_right.data[2] == 1 && Gw_GrayscaleSensor_right.data[3] == 1 && Gw_GrayscaleSensor_right.data[4] == 1 && Gw_GrayscaleSensor_right.data[5] == 1 &&
-            Gw_GrayscaleSensor_right.data[6] == 1 && Gw_GrayscaleSensor_right.data[7] == 1)
+        if (white_Cnt >= 5)
             _ctr_t->state_Order = 7;
         break;
     }
@@ -293,17 +347,20 @@ void car_speed_state_switch(car_state *car)
     case begin_state:
     {
         car->update_vel_flag = 1;
-				pid_reset(&revise_ccd_pid,0.015,0,0.03);//normal_speed=1.6时pid参数
-        speed_normal = 1.6;
-//				pid_reset(&revise_ccd_pid,0.04,0,0.01);//normal_speed=1.4时pid参数
-//        speed_normal = 1.4;
+//			pid_reset(&revise_ccd_pid,0.015,0,0.03);//normal_speed=1.6时pid参数
+//      speed_normal = 1.6;
+				pid_reset(&revise_ccd_pid,0.037,0,0.02);//normal_speed=1.4时pid参数
+        speed_normal = 1.4;
         car->vel_Control();
         break;
     }
     case normal:
-    {
-        car->update_vel_flag = 1;
-        speed_normal = 1.4;
+    {		
+				car->update_vel_flag = 1;
+//			pid_reset(&revise_ccd_pid,0.037,0,0.02);//normal_speed=1.4时pid参数
+//      speed_normal = 1.4;
+				pid_reset(&revise_ccd_pid,0.03,0,0.01);//normal_speed=1.2时pid参数
+        speed_normal = 1.2;
         car->vel_Control();
         break;
     }
@@ -317,7 +374,8 @@ void car_speed_state_switch(car_state *car)
     case slow_down:
     {
         car->update_vel_flag = 1;
-        speed_normal = 0.8;
+				pid_reset(&revise_ccd_pid,0.02,0,0.005);//normal_speed=0.8时pid参数
+        speed_normal = 1;
         car->vel_Control();
         break;
     }
@@ -406,6 +464,18 @@ void car_patter_Switch(car_state *car)
             {
                 car->_car_mode = slow_down_stone;
             }
+						else if (imu_pitch_state_Ctr.state_Order == 4)
+            {
+                car->_car_mode = slow_down;
+            }
+            else if (imu_pitch_state_Ctr.state_Order == 5)
+            {
+                car->_car_mode = slow_down;
+            }
+            else if (imu_pitch_state_Ctr.state_Order == 6)
+            {
+                car->_car_mode = slow_down;
+            }
         }
         else if (imu_priority == 0)
         {
@@ -415,7 +485,7 @@ void car_patter_Switch(car_state *car)
             {
                 normal_time_cnt++;
             }
-            if (normal_time_cnt >= 200)
+							if (normal_time_cnt >= 200)
             {
                 gray_state_Ctr.state_Order = -1;
                 normal_time_cnt = -1;
@@ -424,7 +494,7 @@ void car_patter_Switch(car_state *car)
           	if(gray_state_Ctr.state_Order == -2)
 						{
 								car->_car_mode = slow_down;
-								vTaskDelay(2000);
+								vTaskDelay(500);
 								gray_state_Ctr.state_Order = -1;					
 						}
             if (gray_state_Ctr.state_Order == -1)
@@ -433,7 +503,7 @@ void car_patter_Switch(car_state *car)
                 car->_car_mode = slow_down;
             else if (gray_state_Ctr.state_Order == 1)
             {
-							    normal_time_cnt = -1;
+							  normal_time_cnt = -1;
                 car->_car_mode = stop_car;
             }
             else if (gray_state_Ctr.state_Order == 2)

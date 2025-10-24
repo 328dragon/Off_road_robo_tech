@@ -151,13 +151,10 @@ void gray_read_task(void *pvParameters)
 {
     gray_state_Ctr.data = Gw_GrayscaleSensor.data;
 
-    while (Gw_GrayscaleSensor.gw_ping() || Gw_GrayscaleSensor_right.gw_ping())
-    {
-        vTaskDelay(100);
-    }
     while (1)
     {
-        Gw_GrayscaleSensor.read_data();
+        // Gw_GrayscaleSensor.read_data();
+        Gw_GrayscaleSensor.read_data_gpio  ();
         Gw_GrayscaleSensor_right.read_data();
         gray_state_Ctr.state_func(&gray_state_Ctr, NULL);
         vTaskDelay(20);

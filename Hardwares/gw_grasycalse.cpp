@@ -61,18 +61,33 @@ unsigned char Gw_Grayscale_t::gw_ping(void)
 
 void Gw_Grayscale_t::read_data(void)
 {
-    Digital_read_data = IIC_Get_Digtal(I2C_handle, Salve_Adress);
-    for (int i = 0; i < 8; i++)
-    {
-        data[i] = 1 - ((Digital_read_data >> i) & 0x01); // 读取侧边数字灰度传感器数据
-    }
+//    Digital_read_data = IIC_Get_Digtal(I2C_handle, Salve_Adress);
+//    for (int i = 0; i < 8; i++)
+//    {
+//        data[i] = 1 - ((Digital_read_data >> i) & 0x01); // 读取侧边数字灰度传感器数据
+//    }
 
-    // 获取传感器模拟量结果
-    if (IIC_Get_Anolog(I2C_handle, Salve_Adress, Anolog_read_data, 8))
-    {
-    }
+//    // 获取传感器模拟量结果
+//    if (IIC_Get_Anolog(I2C_handle, Salve_Adress, Anolog_read_data, 8))
+//    {
+//    }
 
-    // 获取传感器归一化结果
-    IIC_Anolog_Normalize(I2C_handle,Salve_Adress, 0xff); // 所有通道归一化都打开
-  
+//    // 获取传感器归一化结果
+//    IIC_Anolog_Normalize(I2C_handle,Salve_Adress, 0xff); // 所有通道归一化都打开
+		for (int i = 0; i < 8; i++)
+    {
+        data[i] = 1; 
+    }
+}
+
+void Gw_Grayscale_t::read_data_gpio(void)
+{
+    data[0] =  1-HAL_GPIO_ReadPin(gray_left0_GPIO_Port,gray_left0_Pin);
+    data[1] =  1-HAL_GPIO_ReadPin(gray_left1_GPIO_Port,gray_left1_Pin);
+    data[2] =  1-HAL_GPIO_ReadPin(gray_left2_GPIO_Port,gray_left2_Pin);
+    data[3] =  1-HAL_GPIO_ReadPin(gray_left3_GPIO_Port,gray_left3_Pin);
+    data[4] =  1-HAL_GPIO_ReadPin(gray_left4_GPIO_Port,gray_left4_Pin);
+    data[5] =  1-HAL_GPIO_ReadPin(gray_left5_GPIO_Port,gray_left5_Pin);
+    data[6] =  1-HAL_GPIO_ReadPin(gray_left6_GPIO_Port,gray_left6_Pin);
+    data[7] =  1-HAL_GPIO_ReadPin(gray_left7_GPIO_Port,gray_left7_Pin);
 }

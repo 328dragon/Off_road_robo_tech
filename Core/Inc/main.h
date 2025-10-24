@@ -38,8 +38,8 @@ extern "C" {
 /* USER CODE BEGIN ET */
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
-	extern I2C_HandleTypeDef hi2c1;
-		extern I2C_HandleTypeDef hi2c2;
+extern I2C_HandleTypeDef hi2c1;
+extern I2C_HandleTypeDef hi2c2;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -60,6 +60,22 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define gray_left4_Pin GPIO_PIN_0
+#define gray_left4_GPIO_Port GPIOC
+#define gray_left5_Pin GPIO_PIN_1
+#define gray_left5_GPIO_Port GPIOC
+#define gray_left6_Pin GPIO_PIN_2
+#define gray_left6_GPIO_Port GPIOC
+#define gray_left7_Pin GPIO_PIN_3
+#define gray_left7_GPIO_Port GPIOC
+#define gray_left3_Pin GPIO_PIN_4
+#define gray_left3_GPIO_Port GPIOA
+#define gray_left2_Pin GPIO_PIN_4
+#define gray_left2_GPIO_Port GPIOC
+#define gray_left1_Pin GPIO_PIN_5
+#define gray_left1_GPIO_Port GPIOC
+#define gray_left0_Pin GPIO_PIN_0
+#define gray_left0_GPIO_Port GPIOB
 #define stop_car_Pin GPIO_PIN_2
 #define stop_car_GPIO_Port GPIOB
 #define E3B_Pin GPIO_PIN_6

@@ -2,6 +2,7 @@
 #define  __GW_GRASYCALSE_H
 
 #include "main.h"
+#include "gpio.h"
 #include "pid_template.h"
 
 
@@ -49,11 +50,12 @@ public:
     }
     unsigned char gw_ping(void );
     void read_data(void);
+    void read_data_gpio(void);
     float ReturnXControl(void)
     {
         float error = 0;
 
-			      error -= data[0] * 9;
+		error -= data[0] * 9;
         error -= data[1] * 5;
         error -= data[2]*3;
         error -= data[3]*1;
