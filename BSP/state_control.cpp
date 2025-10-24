@@ -24,7 +24,6 @@ __IO int exist_turn_rectangle_flag=0;
 
 int up_true_slope=0;
 int SR04_switch=0;
-int half_loop = 0;
 
 // 陀螺仪
 extern float pitch_true;
@@ -35,14 +34,19 @@ void H30_yaw_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
 {
     switch (_ctr_t->state_Order)
     {
-        // 初状态,接近0度
+    // 初状态,接近0度
     case 0:
     {
-        // 走过一个pI的时候
+        // 走过半圈的时候
         if ((*cin > 170 && *cin <=179 )||(*cin < -170 && *cin > -180))
-        {
-            _ctr_t->state_Order = 1;
-//						half_loop = 1;
+        {		
+						//重启超声波测阶梯坡
+						if(exist_turn_rectangle_flag==1)
+							SR04_state_Ctr.state_Order = -1;
+						else if	(exist_turn_rectangle_flag==0)
+							SR04_state_Ctr.state_Order = 2;
+						
+						_ctr_t->state_Order = 1;
         }
         break;
     }
@@ -52,14 +56,9 @@ void H30_yaw_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
         {
             vTaskDelay(200);
 						loop_times++;
-//						half_loop=0;
             _ctr_t->state_Order = 0;
             imu_priority = 1;
             imu_pitch_state_Ctr.state_Order = 0;
-//						if(exist_turn_rectangle_flag==1)
-//							SR04_state_Ctr.state_Order = -1;
-//						else if	(exist_turn_rectangle_flag==0)
-//							SR04_state_Ctr.state_Order = 2;
         }
         break;
     }
@@ -67,11 +66,12 @@ void H30_yaw_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
         break;
     }
 }
-//超声波启动
+
 void SR04_state_Controller(state_ctrl_t *_ctr_t, float *cin)
 {		
 	switch (_ctr_t->state_Order)
     {
+		//超声波开关
     case 0:
     {
         if (*cin < 50.0)
@@ -88,45 +88,37 @@ void SR04_state_Controller(state_ctrl_t *_ctr_t, float *cin)
 
     case 1:
     {
-        if (*cin > 50)
+        if (*cin > 200)
         {		
 						SR04_switch--;
 					  vTaskDelay(100);
 						if(SR04_switch<=0)
 						{
 							start_flag = 1;
-							_ctr_t->state_Order = 2;
+							_ctr_t->state_Order = -1;
 						}
         }
         break;
     }
-//		case 2:
-//		{
-//				if(half_loop==1)
-//				{
-//					half_loop = -1;
-//					vTaskDelay(2000);//确保过双峰不会误判
-//					_ctr_t->state_Order = 3;
-//				}
-//				break;
-//		}
-//		case 3:
-//		{		
-//			//跑外圈中圈
-//			if(exist_turn_rectangle_flag==0){
-//				if(*cin < 100)
-//				{
-//				imu_pitch_state_Ctr.state_Order = 4;
-//				_ctr_t->state_Order = -1;
-//				}
-//			}
-//			//跑内圈
-//			else if(exist_turn_rectangle_flag==1)
-//			{
-//				_ctr_t->state_Order = -1;		
-//			}
-//				break;
-//		}
+		
+		//超声波检测阶梯障碍
+		case 2:
+		{
+					vTaskDelay(2000);//确保过双峰不会误判
+					_ctr_t->state_Order = 3;
+
+				break;
+		}
+		case 3:
+		{		
+				if(*cin < 100)
+				{
+				imu_pitch_state_Ctr.state_Order = 4;
+				_ctr_t->state_Order = -1;
+				}
+
+				break;
+		}
     default:
         break;
     }
@@ -136,6 +128,7 @@ void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
 {
     switch (_ctr_t->state_Order)
     {
+			//0到3是上大坡逻辑，4到6是上阶梯坡逻辑，彼此独立
     case 0:
     {
         if (*cin < -12.0)
@@ -171,49 +164,46 @@ void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
         vTaskDelay(3000);
         normal_time_cnt = 0;
         imu_priority = 0;
-        _ctr_t->state_Order = -1;
-			//第2或第三圈，并且没转过弯
-			if(loop_times>0&&exist_turn_rectangle_flag==0)
-			{
-			gray_state_Ctr.state_Order = -2;
-			}else 
-			{
-			gray_state_Ctr.state_Order = 0;
-			}			
-			break;
+				//第2或第3圈，并且没转过弯
+				if(loop_times>0&&exist_turn_rectangle_flag==0)
+				{
+				gray_state_Ctr.state_Order = -2;
+				}else 
+				{
+				gray_state_Ctr.state_Order = 0;
+				}			
+				
+				_ctr_t->state_Order = -1;
+				break;
     }
-//		//上阶梯坡
-//		case 4:
-//    {
-//        if (*cin < -12.0)
-//        {
-//            imu_priority = 1;
-//						up_true_slope++;
-//						if(up_true_slope>2){
-//            _ctr_t->state_Order = 5;}
-//        }
-//        break;
-//    }
-//    case 5:
-//    {
-//				up_true_slope=0;
-//        if (*cin < 8.0 && *cin > -12.0)
-//        {
-//            _ctr_t->state_Order = 6;
-//        }
-//        break;
-//    }
-//    case 6:
-//    {
-//        if (*cin > 8.0)
-//        {
-//            vTaskDelay(1000);
-//            imu_priority = 0;
-//						_ctr_t->state_Order = -1;
-//        }
-//        break;
-//    }
-
+		
+		//上阶梯坡
+		case 4:
+    {
+        if (*cin < -12.0)
+        {
+            imu_priority = 1;
+				}
+				break;
+    }
+    case 5:
+    {
+        if (*cin < 8.0 && *cin > -12.0)
+        {
+            _ctr_t->state_Order = 6;
+        }
+        break;
+    }
+    case 6:
+    {
+        if (*cin > 8.0)
+        {
+            vTaskDelay(1000);
+            imu_priority = 0;
+						_ctr_t->state_Order = -1;
+        }
+        break;
+    }
     default:
         break;
     }
@@ -470,18 +460,18 @@ void car_patter_Switch(car_state *car)
             {
                 car->_car_mode = slow_down_stone;
             }
-//						else if (imu_pitch_state_Ctr.state_Order == 4)
-//            {
-//                car->_car_mode = slow_down;
-//            }
-//            else if (imu_pitch_state_Ctr.state_Order == 5)
-//            {
-//                car->_car_mode = slow_down;
-//            }
-//            else if (imu_pitch_state_Ctr.state_Order == 6)
-//            {
-//                car->_car_mode = slow_down;
-//            }
+						else if (imu_pitch_state_Ctr.state_Order == 4)
+            {
+                car->_car_mode = slow_down;
+            }
+            else if (imu_pitch_state_Ctr.state_Order == 5)
+            {
+                car->_car_mode = slow_down;
+            }
+            else if (imu_pitch_state_Ctr.state_Order == 6)
+            {
+                car->_car_mode = slow_down;
+            }
         }
         else if (imu_priority == 0)
         {
@@ -500,7 +490,7 @@ void car_patter_Switch(car_state *car)
           	if(gray_state_Ctr.state_Order == -2)
 						{
 								car->_car_mode = slow_down;
-								vTaskDelay(2000);
+								vTaskDelay(1000);
 								gray_state_Ctr.state_Order = -1;					
 						}
             if (gray_state_Ctr.state_Order == -1)
@@ -553,7 +543,4 @@ void car_patter_Switch(car_state *car)
                 car->_car_mode = turn_state;
             }
         }
-
-
-
 }
