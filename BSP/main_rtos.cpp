@@ -153,9 +153,8 @@ void gray_read_task(void *pvParameters)
 
     while (1)
     {
-        // Gw_GrayscaleSensor.read_data();
-        Gw_GrayscaleSensor.read_data_gpio  ();
-        Gw_GrayscaleSensor_right.read_data();
+        Gw_GrayscaleSensor.read_data_gpio();
+//       Gw_GrayscaleSensor_right.read_data();
         gray_state_Ctr.state_func(&gray_state_Ctr, NULL);
         vTaskDelay(20);
     }
