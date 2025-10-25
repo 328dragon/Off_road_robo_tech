@@ -8,6 +8,7 @@
 #include "ccd.h"
 #include "bsp_delay.h"
 #include "SR04.h"
+#include "gpio.h"
 #ifdef __cplusplus
 extern "C" {
 #endif

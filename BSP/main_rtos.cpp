@@ -99,6 +99,8 @@ void main_rtos(void)
 
     // 超声波
     HAL_TIM_Base_Start_IT(&htim11);
+		//流水灯
+		HAL_TIM_Base_Start_IT(&htim13);
     //	HAL_TIM_IC_Start_IT(&htim1,TIM_CHANNEL_2);
     SR04_Register(&front_sr04, SR04_TRIG_GPIO_Port, SR04_TRIG_Pin, &htim1, TIM_CHANNEL_2);
 

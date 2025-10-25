@@ -52,7 +52,7 @@ void Motor::dc_motor::motor_close_vel(float _target_speed)
 void Motor::dc_motor::motor_init(void)
 {
 //	HAL_TIM_Base_Start_IT(&htim13); // 读取编码器
-	HAL_TIM_Base_Start_IT(&htim12); // 计算pid
+	HAL_TIM_Base_Start_IT(&htim12); //  电机关闭检测
 	HAL_TIM_PWM_Start(&motor_pwm_tim, motor_pwm_channel);
 //	HAL_TIM_Encoder_Start(&motor_encoder_tim, TIM_CHANNEL_ALL);
 	PID_struct_init(&vel_pid, POSITION_PID, 90, 70,13, 0.009, 0.11);//右边电机这个参数没问题

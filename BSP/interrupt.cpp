@@ -24,8 +24,6 @@ if(htim==&htim11)
  SR04_Elapsed_callback(&front_sr04);
 }
 
-
-
 if(htim==&htim12)
 {
 if(stop_flag==1)
@@ -44,6 +42,36 @@ else if(stop_flag==0&&start_flag==1)
 	motorl.motor_output(pwm_l);
 	motorr.motor_output(pwm_r);
 }
+}
+static int led_flag=0;
+if(htim==&htim13)
+{	
+	if(stop_flag!=1)
+	{
+		led_flag++;
+	if(led_flag==500)
+	{
+	HAL_GPIO_WritePin(LED1_GPIO_Port,LED1_Pin,GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LED2_GPIO_Port,LED2_Pin,GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED3_GPIO_Port,LED3_Pin,GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED4_GPIO_Port,LED4_Pin,GPIO_PIN_RESET);
+	}
+	else if(led_flag==1000)
+	{
+	HAL_GPIO_WritePin(LED1_GPIO_Port,LED1_Pin,GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED2_GPIO_Port,LED2_Pin,GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LED3_GPIO_Port,LED3_Pin,GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED4_GPIO_Port,LED4_Pin,GPIO_PIN_RESET);
+	}
+
+	else if(led_flag>1000)
+		led_flag=0;
+	}
+	else if(stop_flag==1)
+	{
+		HAL_GPIO_WritePin(LED1_GPIO_Port,LED1_Pin,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(LED2_GPIO_Port,LED2_Pin,GPIO_PIN_RESET);
+	}
 }
 }
 

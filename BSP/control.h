@@ -20,11 +20,12 @@ normal=0,
 slow_down=1,
 turn_state=2,
 speed_up=3,
-	stop_car=4,
-	turn_state_second=5,
-	slow_down_stone=6,
-	begin_state=7
-	
+stop_car=4,
+turn_state_second=5,
+slow_down_stone=6,
+begin_state=7,
+slow_down_inside=8,
+slow_down_slope=9
 }car_run_mode;
 
 
