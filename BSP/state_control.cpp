@@ -13,10 +13,9 @@ extern state_ctrl_t imu_yaw_state_Ctr;
 extern GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor;
 extern GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor_right;
 
-int imu_priority = 1;
-int loop_times= 0;
-int obstacle_cnt = 0;
-__IO int normal_time_cnt = -2;
+__IO int imu_priority = 1;
+__IO int loop_times= 0;
+__IO int normal_time_cnt = -1;
 int turn_times = 0;
 extern __IO int stop_flag;
 extern __IO int start_flag;
@@ -24,7 +23,6 @@ __IO int exist_turn_rectangle_flag=0;
 
 int up_true_slope=0;
 int SR04_switch=0;
-int half_loop = 0;
 
 // 陀螺仪
 extern float pitch_true;
@@ -42,7 +40,6 @@ void H30_yaw_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
         if ((*cin > 170 && *cin <=179 )||(*cin < -170 && *cin > -180))
         {
             _ctr_t->state_Order = 1;
-//						half_loop = 1;
         }
         break;
     }
@@ -97,7 +94,7 @@ void SR04_state_Controller(state_ctrl_t *_ctr_t, float *cin)
 						if(SR04_switch<=0)
 						{
 							start_flag = 1;
-							_ctr_t->state_Order = 2;
+							_ctr_t->state_Order = -1;
 						}
         }
         break;
@@ -145,13 +142,14 @@ void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
             imu_priority = 1;
 						up_true_slope++;
 					if(up_true_slope>2){
+							up_true_slope=0;
             _ctr_t->state_Order = 1;}
         }
         break;
     }
     case 1:
     {
-				up_true_slope=0;
+			
         if (*cin < 8.0 && *cin > -12.0)
         {
             _ctr_t->state_Order = 2;
@@ -170,19 +168,19 @@ void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
 
     case 3:
     {
-        vTaskDelay(2000);
-        normal_time_cnt = 0;
-        imu_priority = 0;
+        vTaskDelay(3500);
+        normal_time_cnt = 0;  
         _ctr_t->state_Order = -1;
 			//第2或第三圈，并且没转过弯
 			if(loop_times>0 && exist_turn_rectangle_flag==0)
 			{
-				gray_state_Ctr.state_Order = -1;
+				gray_state_Ctr.state_Order = -2;
 			}
 			else if(exist_turn_rectangle_flag==1)
 			{
 				gray_state_Ctr.state_Order = 0;
-			}			
+			}		
+			imu_priority = 0;			
 			break;
     }
 //		//上阶梯坡
@@ -225,6 +223,7 @@ void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
 // 内圈感为状态机
 void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
 {
+	if(imu_priority==0){
     switch (_ctr_t->state_Order)
     {
         // 状态0加速
@@ -246,23 +245,23 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
     {
         vTaskDelay(300);
         _ctr_t->state_Order = 2;
-				exist_turn_rectangle_flag=1;
+				
         break;
     }
     // 状态2旋转
     case 2:
     {
-
+	
         if ((Gw_GrayscaleSensor.data[3] == 1 && Gw_GrayscaleSensor.data[4] == 1 && Gw_GrayscaleSensor.data[5] == 1) && (Gw_GrayscaleSensor.data[6] == 0 && Gw_GrayscaleSensor.data[7] == 0))
         {
             _ctr_t->state_Order = 3;
-            turn_times++;
         }
         break;
     }
     // 直线慢速
     case 3:
     {
+//				exist_turn_rectangle_flag=1;
         if (_ctr_t->data[1] == 0 && _ctr_t->data[2] == 0 && _ctr_t->data[3] == 0 && _ctr_t->data[4] == 0 && _ctr_t->data[5] == 0 && _ctr_t->data[6] == 0)
             _ctr_t->state_Order = 4;
         break;
@@ -280,7 +279,6 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
         if ((Gw_GrayscaleSensor.data[3] == 1 && Gw_GrayscaleSensor.data[4] == 1 && Gw_GrayscaleSensor.data[5] == 1) && (Gw_GrayscaleSensor.data[6] == 0 && Gw_GrayscaleSensor.data[7] == 0))
         {
             _ctr_t->state_Order = 6;
-            turn_times++;
         }
         break;
     }
@@ -313,7 +311,6 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
         if ((Gw_GrayscaleSensor.data[3] == 1 && Gw_GrayscaleSensor.data[4] == 1 && Gw_GrayscaleSensor.data[5] == 1) && (Gw_GrayscaleSensor.data[6] == 0 && Gw_GrayscaleSensor.data[7] == 0))
         {
             _ctr_t->state_Order = 9;
-            turn_times++;
         }
         break;
     }
@@ -338,7 +335,7 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
         if ((Gw_GrayscaleSensor.data[3] == 1 && Gw_GrayscaleSensor.data[4] == 1 && Gw_GrayscaleSensor.data[5] == 1) && (Gw_GrayscaleSensor.data[6] == 0 && Gw_GrayscaleSensor.data[7] == 0))
         {
             _ctr_t->state_Order = 0;
-            turn_times++;
+         
         }
         break;
     }
@@ -346,6 +343,7 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
     default:
         break;
     }
+	}
 }
 
 void car_speed_state_switch(car_state *car)
@@ -441,14 +439,6 @@ void car_speed_state_switch(car_state *car)
 
 void car_patter_Switch(car_state *car)
 {
-        if (turn_times >= 4)
-        {
-            vTaskDelay(250);
-//            imu_priority = 1;
-            turn_times = 0;
-//            imu_pitch_state_Ctr.state_Order = 0;
-        }
-
 				if(loop_times==3)
 				{
 					vTaskDelay(1500);
@@ -488,7 +478,7 @@ void car_patter_Switch(car_state *car)
         }
         else if (imu_priority == 0)
         {
-						if(loop_times==0)
+						if(loop_times==0&&exist_turn_rectangle_flag==0)
 						{
 						  if (normal_time_cnt >= 0 && gray_state_Ctr.state_Order == 0)
             {
@@ -500,6 +490,7 @@ void car_patter_Switch(car_state *car)
                 normal_time_cnt = -1;
             }				
 						}
+				
 						
           	if(gray_state_Ctr.state_Order == -2)
 						{
@@ -508,7 +499,7 @@ void car_patter_Switch(car_state *car)
 								gray_state_Ctr.state_Order = -1;					
 						}
             if (gray_state_Ctr.state_Order == -1)
-                car->_car_mode = normal;
+                car->_car_mode = normal;			
 						
             if (gray_state_Ctr.state_Order == 0)
                 car->_car_mode = slow_down;

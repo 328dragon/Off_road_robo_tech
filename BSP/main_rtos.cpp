@@ -114,7 +114,7 @@ void main_rtos(void)
                                    &state_update_handle);
     BaseType_t task2 = xTaskCreate(data_processing, "data_processing", 200, NULL, 4,
                                    &data_processing_handle);
-    BaseType_t task3 = xTaskCreate(pattern_switch, "pattern_switch", 200, NULL, 4,
+    BaseType_t task3 = xTaskCreate(pattern_switch, "pattern_switch", 300, NULL, 4,
                                    &pattern_switch_handle);
     BaseType_t ok4 = xTaskCreate(H30_state_task, "mpu6050_read_task", 300, NULL, 2, &H30_state_handle);
     BaseType_t ok5 = xTaskCreate(gray_read_task, "gray_read_task", 300, NULL, 2, &gray_read_handle);
@@ -154,7 +154,7 @@ void gray_read_task(void *pvParameters)
     while (1)
     {
         Gw_GrayscaleSensor.read_data_gpio();
-//       Gw_GrayscaleSensor_right.read_data();
+       Gw_GrayscaleSensor_right.read_data();
         gray_state_Ctr.state_func(&gray_state_Ctr, NULL);
         vTaskDelay(20);
     }
