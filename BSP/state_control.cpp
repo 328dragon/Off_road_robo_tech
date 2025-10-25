@@ -47,9 +47,11 @@ void H30_yaw_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
         break;
     }
     case 1:
-    {
+    {		int temp_loop_ok=0;
         if ( *cin > -5 && *cin < 5)
-        {
+        {		
+//						temp_loop_ok++;
+						
             vTaskDelay(200);
 						loop_times++;
 //						half_loop=0;
@@ -160,7 +162,7 @@ void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
     {
         if (*cin > 8.0)
         {
-            vTaskDelay(2000);
+            vTaskDelay(1500);
             _ctr_t->state_Order = 3;
         }
         break;
@@ -168,17 +170,18 @@ void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
 
     case 3:
     {
-        vTaskDelay(3000);
+        vTaskDelay(2000);
         normal_time_cnt = 0;
         imu_priority = 0;
         _ctr_t->state_Order = -1;
 			//第2或第三圈，并且没转过弯
-			if(loop_times>0&&exist_turn_rectangle_flag==0)
+			if(loop_times>0 && exist_turn_rectangle_flag==0)
 			{
-			gray_state_Ctr.state_Order = -2;
-			}else 
+				gray_state_Ctr.state_Order = -1;
+			}
+			else if(exist_turn_rectangle_flag==1)
 			{
-			gray_state_Ctr.state_Order = 0;
+				gray_state_Ctr.state_Order = 0;
 			}			
 			break;
     }
@@ -353,20 +356,20 @@ void car_speed_state_switch(car_state *car)
     case begin_state:
     {
         car->update_vel_flag = 1;
-//			pid_reset(&revise_ccd_pid,0.015,0,0.03);//normal_speed=1.6时pid参数
-//      speed_normal = 1.6;
-				pid_reset(&revise_ccd_pid,0.03,0,0.01);//normal_speed=1.2时pid参数
-        speed_normal = 1.2;
+				pid_reset(&revise_ccd_pid,0.037,0,0.02);//normal_speed=1.4时pid参数
+				speed_normal = 1.4;
+//				pid_reset(&revise_ccd_pid,0.03,0,0.01);//normal_speed=1.2时pid参数
+//        speed_normal = 1.2;
         car->vel_Control();
         break;
     }
     case normal:
     {		
 				car->update_vel_flag = 1;
-//			pid_reset(&revise_ccd_pid,0.037,0,0.02);//normal_speed=1.4时pid参数
-//      speed_normal = 1.4;
-				pid_reset(&revise_ccd_pid,0.03,0,0.01);//normal_speed=1.2时pid参数
-        speed_normal = 1.2;
+			pid_reset(&revise_ccd_pid,0.037,0,0.02);//normal_speed=1.4时pid参数
+      speed_normal = 1.4;
+//				pid_reset(&revise_ccd_pid,0.03,0,0.01);//normal_speed=1.2时pid参数
+//        speed_normal = 1.2;
         car->vel_Control();
         break;
     }
@@ -381,7 +384,7 @@ void car_speed_state_switch(car_state *car)
     {
         car->update_vel_flag = 1;
 				pid_reset(&revise_ccd_pid,0.02,0,0.005);//normal_speed=0.8时pid参数
-        speed_normal = 0.8;
+        speed_normal = 1;
         car->vel_Control();
         break;
     }
@@ -411,16 +414,16 @@ void car_speed_state_switch(car_state *car)
     case turn_state:
     {
         car->update_vel_flag = 0;
-        pwm_l = -7;
-        pwm_r = 13;
+        pwm_l = -10;
+        pwm_r = 14;
         break;
     }
 
     case turn_state_second:
     {
         car->update_vel_flag = 0;
-        pwm_l = -8;
-        pwm_r = 12;
+        pwm_l = -10;
+        pwm_r = 11;
         break;
     }
     case stop_car:
@@ -441,14 +444,14 @@ void car_patter_Switch(car_state *car)
         if (turn_times >= 4)
         {
             vTaskDelay(250);
-            imu_priority = 1;
+//            imu_priority = 1;
             turn_times = 0;
-            imu_pitch_state_Ctr.state_Order = 0;
+//            imu_pitch_state_Ctr.state_Order = 0;
         }
 
 				if(loop_times==3)
 				{
-					vTaskDelay(1000);
+					vTaskDelay(1500);
 					stop_flag=1;
 				}
 				
@@ -491,12 +494,13 @@ void car_patter_Switch(car_state *car)
             {
                 normal_time_cnt++;
             }
-							if (normal_time_cnt >= 250)
+							if (normal_time_cnt >= 200)
             {
                 gray_state_Ctr.state_Order = -1;
                 normal_time_cnt = -1;
             }				
 						}
+						
           	if(gray_state_Ctr.state_Order == -2)
 						{
 								car->_car_mode = slow_down;
@@ -505,6 +509,7 @@ void car_patter_Switch(car_state *car)
 						}
             if (gray_state_Ctr.state_Order == -1)
                 car->_car_mode = normal;
+						
             if (gray_state_Ctr.state_Order == 0)
                 car->_car_mode = slow_down;
             else if (gray_state_Ctr.state_Order == 1)
