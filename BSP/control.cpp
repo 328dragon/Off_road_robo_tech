@@ -7,7 +7,7 @@
 #define Quadratic_limit 35
 
 #define linear_k 0.5
-#define far_linear_k 2.5
+#define far_linear_k 2
 #define Quadratic_k 2.5
 
 

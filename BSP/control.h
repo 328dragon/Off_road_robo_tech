@@ -25,7 +25,8 @@ turn_state_second=5,
 slow_down_stone=6,
 begin_state=7,
 slow_down_inside=8,
-slow_down_slope=9
+slow_down_slope=9,
+speed_up_straight=10
 }car_run_mode;
 
 
