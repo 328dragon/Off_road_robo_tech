@@ -15,7 +15,7 @@ extern GW_grasycalse::Gw_Grayscale_t Gw_GrayscaleSensor_right;
 
 __IO int imu_priority = 1;
 __IO int loop_times= 0;
-__IO int half_loop=0;
+__IO int half_loop=-1;
 __IO int stair_flag=0;
 __IO int normal_time_cnt = -1;
 int turn_times = 0;
@@ -25,6 +25,8 @@ __IO int exist_turn_rectangle_flag=0;
 
 int up_true_slope=0;
 int SR04_switch=0;
+
+int pattern_switch_flag=0;
 
 // 陀螺仪
 extern float pitch_true;
@@ -42,11 +44,7 @@ void H30_yaw_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
         if ((*cin > 170 && *cin <=179 )||(*cin < -170 && *cin > -180))
         {
             _ctr_t->state_Order = 1;
-						half_loop=1;
-						if(exist_turn_rectangle_flag==1)
-							SR04_state_Ctr.state_Order = -1;
-						else if	(exist_turn_rectangle_flag==0)
-							SR04_state_Ctr.state_Order = 2;
+						half_loop=1;		
         }
         break;
     }
@@ -56,10 +54,9 @@ void H30_yaw_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
         {		
             vTaskDelay(200);
 						loop_times++;
+						imu_priority = 1;
 						half_loop=0;
             _ctr_t->state_Order = 0;
-            imu_priority = 1;
-						stair_flag=0;
             imu_pitch_state_Ctr.state_Order = 0;
         }
         break;
@@ -87,7 +84,6 @@ void SR04_state_Controller(state_ctrl_t *_ctr_t, float *cin)
         }
         break;
     }
-
     case 1:
     {		
         if (*cin > 50)
@@ -102,18 +98,6 @@ void SR04_state_Controller(state_ctrl_t *_ctr_t, float *cin)
         }
         break;
     }
-		case 2:
-		{			
-				vTaskDelay(4000);//确保过双峰不会误判
-				_ctr_t->state_Order = 3;
-				break;
-		}
-		case 3:
-		{		
-				imu_pitch_state_Ctr.state_Order = 4;
-				_ctr_t->state_Order = -1;
-				break;
-		}
     default:
         break;
     }
@@ -148,63 +132,13 @@ void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
     {
         if (*cin > 8.0)
         {
-            vTaskDelay(1000);
-            _ctr_t->state_Order = 3;
+            vTaskDelay(2000);
+						imu_priority = 0;
+            _ctr_t->state_Order = -1;
+						
         }
         break;
     }
-
-    case 3:
-    {
-        vTaskDelay(2500);
-        normal_time_cnt = 0;  
-        _ctr_t->state_Order = -1;
-			//第2或第三圈，并且没转过弯
-			if(loop_times>0 && exist_turn_rectangle_flag==0)
-			{
-				gray_state_Ctr.state_Order = -2;
-			}
-			else if(exist_turn_rectangle_flag==1)
-			{
-				gray_state_Ctr.state_Order = 0;
-			}		
-			imu_priority = 0;			
-			break;
-    }
-		
-		//上阶梯坡
-		case 4:
-    {
-        if (*cin < -12.0)
-        {
-            imu_priority = 1;
-						up_true_slope++;
-						if(up_true_slope>2){
-            _ctr_t->state_Order = 5;}
-        }
-        break;
-    }
-    case 5:
-    {
-				up_true_slope=0;
-        if (*cin < 8.0 && *cin > -12.0)
-        {
-            _ctr_t->state_Order = 6;
-        }
-        break;
-    }
-    case 6:
-    {
-        if (*cin > 8.0)
-        {
-            vTaskDelay(1000);
-            imu_priority = 0;
-						stair_flag=1;
-						_ctr_t->state_Order = -1;
-        }
-        break;
-    }
-
     default:
         break;
     }
@@ -213,10 +147,10 @@ void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin)
 // 内圈感为状态机
 void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
 {
-	if(imu_priority==0){
+
     switch (_ctr_t->state_Order)
     {
-        // 状态0加速
+    // 状态0加速
     case 0:
     {
         int white_Cnt = 0;
@@ -279,7 +213,7 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
 		}
 		case 7:
 		{
-				vTaskDelay(3300);
+				vTaskDelay(3200);
 				_ctr_t->state_Order = 8;
 		}
 		//阶梯坡前减速
@@ -321,7 +255,7 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
             _ctr_t->state_Order = 12;
         break;
     }
-        // 停下等待1s
+    // 停下等待1s
     case 12:
     {
         vTaskDelay(300);
@@ -329,28 +263,32 @@ void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin)
         break;
     }
 
-        // 旋转
+    // 旋转
     case 13:
     {
         if ((Gw_GrayscaleSensor.data[3] == 1 && Gw_GrayscaleSensor.data[4] == 1 && Gw_GrayscaleSensor.data[5] == 1) && (Gw_GrayscaleSensor.data[6] == 0 && Gw_GrayscaleSensor.data[7] == 0))
         {
-            _ctr_t->state_Order = 0;
+            _ctr_t->state_Order = 14;
          
         }
+        break;
+    }
+		case 14:
+    {
+				vTaskDelay(1500);
+        _ctr_t->state_Order = 0;
         break;
     }
 
     default:
         break;
     }
-	}
 }
 
 void car_speed_state_switch(car_state *car)
 {
     switch (car->_car_mode)
     {
-
     case begin_state:
     {
         car->update_vel_flag = 1;
@@ -371,15 +309,15 @@ void car_speed_state_switch(car_state *car)
     {
         car->update_vel_flag = 1;
 				pid_reset(&revise_ccd_pid,0.01,0,0.03);//normal_speed=1.6时pid参数
-        speed_normal = 1.6;
+        speed_normal = 1.8;
         car->vel_Control();
         break;
     }
 		case speed_up_straight:
     {
         car->update_vel_flag = 1;
-				pid_reset(&revise_ccd_pid,0.01,0.01,0.03);//normal_speed=1.8时pid参数
-        speed_normal = 1.8;
+				pid_reset(&revise_ccd_pid,0.01,0,0.03);//normal_speed=1.8时pid参数
+        speed_normal = 1.6;
         car->vel_Control();
         break;
     }
@@ -394,36 +332,11 @@ void car_speed_state_switch(car_state *car)
 		case slow_down_slope:
     {
         car->update_vel_flag = 1;
-				speed_normal = 0;
-				vTaskDelay(500);
 				pid_reset(&revise_ccd_pid,0.015,0,0.005);//normal_speed=1时pid参数
         speed_normal = 0.8;
         car->vel_Control();
         break;
     }
-    case slow_down_stone:
-    {
-        car->update_vel_flag = 0;
-        float yaw_limit = 0;
-        if (yaw_true >= imu_yaw_limit)
-        {
-            yaw_limit = imu_yaw_limit;
-        }
-        else if (yaw_true <= -imu_yaw_limit)
-        {
-
-            yaw_limit = -imu_yaw_limit;
-        }
-        else
-        {
-            yaw_limit = yaw_true;
-        }
-
-        pwm_l = 10 + yaw_limit * 0.8;
-        pwm_r = 10 - yaw_limit * 0.8;
-        break;
-    }
-
     case turn_state:
     {
         car->update_vel_flag = 0;
@@ -451,7 +364,8 @@ void car_speed_state_switch(car_state *car)
     }
 }
 
-void car_patter_Switch(car_state *car)
+//有障碍
+void car_patter_Switch2(car_state *car)
 {
 				if(loop_times==3)
 				{
@@ -462,7 +376,13 @@ void car_patter_Switch(car_state *car)
         if (imu_priority == 1)
         {
             if (imu_pitch_state_Ctr.state_Order == 0)
-            {
+            {		
+								//第二圈开始回正前减速一段时间
+								if(loop_times!=0)
+								{
+										car->_car_mode = normal;
+										vTaskDelay(1500);
+								}
                 car->_car_mode = begin_state;
             }
             else if (imu_pitch_state_Ctr.state_Order == 1)
@@ -473,65 +393,35 @@ void car_patter_Switch(car_state *car)
             {
                 car->_car_mode = slow_down_slope;
             }
-            else if (imu_pitch_state_Ctr.state_Order == 3)
-            {
-                car->_car_mode = slow_down_stone;
-            }
-						else if (imu_pitch_state_Ctr.state_Order == 4)
-            {
-                car->_car_mode = slow_down;
-            }
-            else if (imu_pitch_state_Ctr.state_Order == 5)
-            {
-                car->_car_mode = slow_down;
-            }
-            else if (imu_pitch_state_Ctr.state_Order == 6)
-            {
-                car->_car_mode = slow_down;
-            }
         }
         else if (imu_priority == 0)
-        {
-						if(loop_times==0&&exist_turn_rectangle_flag==0)
-						{
-						  if (normal_time_cnt >= 0 && gray_state_Ctr.state_Order == 0)
-            {
-                normal_time_cnt++;
-            }
-							if (normal_time_cnt >= 175)
-            {
-                gray_state_Ctr.state_Order = -1;
-                normal_time_cnt = -1;
-            }				
+        {		
+						//转完半圈可以判断是否在内圈
+						if(half_loop==1&&exist_turn_rectangle_flag==0)
+						{			
+								gray_state_Ctr.state_Order = -1;
 						}
-          	if(gray_state_Ctr.state_Order == -2)
-						{
-								car->_car_mode = slow_down;
-								vTaskDelay(1000);
-								gray_state_Ctr.state_Order = -1;					
-						}
+						//转过第一个弯后减速一下
 						if (gray_state_Ctr.state_Order == -1&&half_loop==1)
 						{
 								car->_car_mode = normal;
-								vTaskDelay(2500);
-								half_loop=2;
+								vTaskDelay(1000);
+								half_loop=-1;
+						}	
+						if (gray_state_Ctr.state_Order == -1&&half_loop==-1)
+								car->_car_mode = speed_up_straight;
+		
+						if (gray_state_Ctr.state_Order == 0)
+						{		
+								//下坡后降点速
+								car->_car_mode = normal;
+								vTaskDelay(3000);
+								//转直角弯前需要减速
+								car->_car_mode = slow_down;
 						}
-						//过了半圈没过阶梯坡加速
-            if (gray_state_Ctr.state_Order == -1&&half_loop==2&&stair_flag==0)
-                car->_car_mode = speed_up_straight;			
-						//过了半圈过了阶梯坡转弯降速
-						if (gray_state_Ctr.state_Order == -1&&half_loop==2&&stair_flag==1)
-                car->_car_mode = normal;
-						//没过半圈转弯减速
-						if (gray_state_Ctr.state_Order == -1&&half_loop==0)
-                car->_car_mode = normal;
-						
-            if (gray_state_Ctr.state_Order == 0)
-                car->_car_mode = slow_down;
 						
             else if (gray_state_Ctr.state_Order == 1)
             {
-							  normal_time_cnt = -1;
                 car->_car_mode = stop_car;
             }
             else if (gray_state_Ctr.state_Order == 2)
@@ -560,7 +450,7 @@ void car_patter_Switch(car_state *car)
             }
 						else if (gray_state_Ctr.state_Order == 8)
             {
-                car->_car_mode = normal;
+                car->_car_mode = slow_down;
             }
             else if (gray_state_Ctr.state_Order == 9)
             {
@@ -582,8 +472,102 @@ void car_patter_Switch(car_state *car)
             {
                 car->_car_mode = turn_state;
             }
+						else if (gray_state_Ctr.state_Order == 14)
+            {
+                car->_car_mode = normal;
+            }
         }
+}
 
-
-
+//无障碍
+void car_patter_Switch1(car_state *car)
+{
+		if(loop_times==3)
+		{
+			vTaskDelay(1500);
+			stop_flag=1;
+		}
+		if(half_loop==1&&exist_turn_rectangle_flag==0)
+		{			
+				gray_state_Ctr.state_Order = -1;
+		}
+		
+		if (gray_state_Ctr.state_Order == -1&&half_loop==1)
+		{
+				car->_car_mode = normal;
+				vTaskDelay(1000);
+				half_loop=-1;
+		}
+		if (gray_state_Ctr.state_Order == -1&&half_loop==0)
+		{
+				car->_car_mode = normal;
+				vTaskDelay(1000);
+				half_loop=-1;
+		}
+		if (gray_state_Ctr.state_Order == -1&&half_loop==-1)
+        car->_car_mode = speed_up_straight;
+		
+    if (gray_state_Ctr.state_Order == 0)
+		{		
+				car->_car_mode = speed_up_straight;
+				vTaskDelay(3000);
+				car->_car_mode = slow_down;
+		}
+    				
+            else if (gray_state_Ctr.state_Order == 1)
+            {
+                car->_car_mode = stop_car;
+            }
+            else if (gray_state_Ctr.state_Order == 2)
+            {
+                car->_car_mode = turn_state;
+            }
+            else if (gray_state_Ctr.state_Order == 3)
+            {
+                car->_car_mode = slow_down;
+            }
+            else if (gray_state_Ctr.state_Order == 4)
+            {
+                car->_car_mode = stop_car;
+            }
+            else if (gray_state_Ctr.state_Order == 5)
+            {
+                car->_car_mode = turn_state;           
+            }
+						else if (gray_state_Ctr.state_Order == 6)
+            {
+                car->_car_mode = normal;
+            }
+            else if (gray_state_Ctr.state_Order == 7)
+            {
+                car->_car_mode = speed_up_straight;
+            }
+						else if (gray_state_Ctr.state_Order == 8)
+            {
+                car->_car_mode = slow_down;
+            }
+            else if (gray_state_Ctr.state_Order == 9)
+            {
+                car->_car_mode = stop_car;
+            }
+            else if (gray_state_Ctr.state_Order == 10)
+            {
+                car->_car_mode = turn_state;
+            }
+            else if (gray_state_Ctr.state_Order == 11)
+            {
+                car->_car_mode = slow_down;
+            }
+            else if (gray_state_Ctr.state_Order == 12)
+            {
+                car->_car_mode = stop_car;
+            }
+            else if (gray_state_Ctr.state_Order == 13)
+            {
+                car->_car_mode = turn_state;
+            }
+						else if (gray_state_Ctr.state_Order == 14)
+            {
+                car->_car_mode = normal;
+            }
 }

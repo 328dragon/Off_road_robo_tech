@@ -24,6 +24,7 @@ void H30_pitch_state_ctrl(state_ctrl_t *_ctr_t, float *cin);
 void gw_state_Ctrl(state_ctrl_t *_ctr_t, float *cin);
 void SR04_state_Controller(state_ctrl_t *_ctr_t, float *cin);
 void car_speed_state_switch(car_state *car);
-void car_patter_Switch(car_state *car);
+void car_patter_Switch1(car_state *car);
+void car_patter_Switch2(car_state *car);
 #endif 
 

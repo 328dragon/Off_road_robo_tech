@@ -80,10 +80,10 @@ void Error_Handler(void);
 #define LED2_GPIO_Port GPIOB
 #define LED1_Pin GPIO_PIN_2
 #define LED1_GPIO_Port GPIOB
-#define LED3_Pin GPIO_PIN_6
-#define LED3_GPIO_Port GPIOC
-#define LED4_Pin GPIO_PIN_7
-#define LED4_GPIO_Port GPIOC
+#define Obstacal_Switch_Pin GPIO_PIN_6
+#define Obstacal_Switch_GPIO_Port GPIOC
+#define Speed_Switch_Pin GPIO_PIN_7
+#define Speed_Switch_GPIO_Port GPIOC
 #define EN2_Pin GPIO_PIN_8
 #define EN2_GPIO_Port GPIOC
 #define EN1_Pin GPIO_PIN_9

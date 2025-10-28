@@ -15,6 +15,7 @@ extern float speed_normal;
 extern float pwm_l;
 extern float pwm_r;
 extern int turn_rectngle_flag;
+extern int pattern_switch_flag;
 
 state_ctrl_t imu_yaw_state_Ctr = {0, 0, 0, NULL, H30_yaw_state_ctrl};
 state_ctrl_t imu_pitch_state_Ctr = {0, 0, 0, NULL, H30_pitch_state_ctrl};
@@ -89,8 +90,13 @@ void pattern_switch(void *pvparameters);
 void H30_state_task(void *pvparameters);
 
 void main_rtos(void)
-{
-
+{		
+	//根据硬件判断模式
+		if(HAL_GPIO_ReadPin(GPIOC,Speed_Switch_Pin))
+				pattern_switch_flag=1;
+		else if(HAL_GPIO_ReadPin(GPIOC,Obstacal_Switch_Pin))
+				pattern_switch_flag=2;
+		
     USARTRegister(&uart2, &uart2_cfg);
     memset(uart2.recv_buff, 0, uart2.recv_buff_size);
     HAL_Delay(1000);
@@ -135,10 +141,13 @@ void H30_state_task(void *pvparameters)
 {
 
     while (1)
-    {
-        H30_pitch_state_ctrl(&imu_pitch_state_Ctr, &pitch_true);
-				H30_yaw_state_ctrl(&imu_yaw_state_Ctr,&yaw_true);
-			
+    {		
+				if(pattern_switch_flag==2)
+				{
+					H30_pitch_state_ctrl(&imu_pitch_state_Ctr, &pitch_true);
+				}
+					H30_yaw_state_ctrl(&imu_yaw_state_Ctr,&yaw_true);
+	 
         SR04_GetData(&front_sr04);
         SR04_state_Controller(&SR04_state_Ctr, &front_sr04.distant);
 			
@@ -156,7 +165,7 @@ void gray_read_task(void *pvParameters)
     while (1)
     {
         Gw_GrayscaleSensor.read_data_gpio();
-       Gw_GrayscaleSensor_right.read_data();
+				Gw_GrayscaleSensor_right.read_data();
         gray_state_Ctr.state_func(&gray_state_Ctr, NULL);
         vTaskDelay(20);
     }
@@ -164,8 +173,8 @@ void gray_read_task(void *pvParameters)
 void state_update(void *pvparameters)
 {
     while (1)
-    {
-        car_speed_state_switch(&car);
+    {		
+				car_speed_state_switch(&car);
         vTaskDelay(10);
     }
 }
@@ -184,8 +193,11 @@ void data_processing(void *pvparameters)
 void pattern_switch(void *pvparameters)
 {
     while (1)
-    {
-        car_patter_Switch(&car);
+    {		
+				if(pattern_switch_flag==2)
+						car_patter_Switch2(&car);
+				else if(pattern_switch_flag==1)
+						car_patter_Switch1(&car);
         vTaskDelay(10);
     }
 }
